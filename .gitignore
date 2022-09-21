@@ -1,0 +1,5 @@
+tmp/
+.vscode
+.pio
+*.old
+build*/

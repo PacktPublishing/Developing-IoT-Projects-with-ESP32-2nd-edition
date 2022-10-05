@@ -11,5 +11,8 @@ extern "C" void app_main()
     { led.set(state); };
     app::AppButton button(fn);
 
-    vTaskDelete(nullptr);
+    led.init();
+    button.init();
+
+    vTaskSuspend(nullptr);
 }

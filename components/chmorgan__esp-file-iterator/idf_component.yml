@@ -1,0 +1,7 @@
+dependencies:
+  idf:
+    version: '>=4.1.0'
+description: Iterator for a list of files in a directory, could be used to track an
+  audio or image playlist
+url: https://github.com/chmorgan/esp-file-iterator
+version: 1.0.0

@@ -1,0 +1,20 @@
+menu "ESP Insights"
+
+    config ESP_INSIGHTS_ENABLED
+        bool "Enable ESP Insights"
+        default n
+
+    config ESP_INSIGHTS_DEBUG_ENABLED
+        depends on ESP_INSIGHTS_ENABLED
+        bool "Enable Insights debug prints"
+        default n
+
+    config ESP_INSIGHTS_COREDUMP_ENABLE
+        bool "Enable core dump summary support"
+        default y
+        depends on (ESP_COREDUMP_ENABLE_TO_FLASH && ESP_COREDUMP_DATA_FORMAT_ELF) || (ESP32_ENABLE_COREDUMP_TO_FLASH && ESP32_COREDUMP_DATA_FORMAT_ELF)
+        help
+            This option enables core dump summary functionality in insights.
+            In case of crash, insights sends the core dump summary to cloud on next boot.
+
+endmenu

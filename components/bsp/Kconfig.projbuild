@@ -1,0 +1,23 @@
+menu "HMI Board Config"
+
+
+
+    choice LCD_INTERFACE
+        prompt "Select LCD interface"
+        depends on ESP_CUSTOM_BOARD
+        default LCD_INTERFACE_I80
+        help
+            Select LCD interface of custom board
+
+    config LCD_INTERFACE_I2C
+        bool "LCD_INTERFACE_I2C"
+    config LCD_INTERFACE_I80
+        bool "LCD_INTERFACE_I80"
+    config LCD_INTERFACE_SPI
+        bool "LCD_INTERFACE_SPI"
+
+    endchoice
+
+
+   
+endmenu

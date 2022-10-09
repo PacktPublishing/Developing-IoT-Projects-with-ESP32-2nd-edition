@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdio>
 #include <cinttypes>
 #include "esp_err.h"
 #include "esp_log.h"
@@ -7,7 +8,6 @@
 #include "bsp_board.h"
 #include "bsp_storage.h"
 #include "audio_player.h"
-#include "file_iterator.h"
 
 #include "AppSettings.hpp"
 
@@ -18,10 +18,10 @@ namespace app
     private:
         AppSettings &m_settings;
         bool m_playing;
-        file_iterator_instance_t *file_iterator;
+        FILE *m_fp;
 
     public:
-        AppAudio(AppSettings &settings) : m_settings(settings), m_playing(false) {}
+        AppAudio(AppSettings &settings) : m_settings(settings), m_playing(false), m_fp(nullptr) {}
         void init(audio_player_mute_fn fn)
         {
             ESP_ERROR_CHECK(bsp_board_init());
@@ -32,8 +32,6 @@ namespace app
                                             .mute_fn = fn,
                                             .priority = 1};
             ESP_ERROR_CHECK(audio_player_new(config));
-
-            file_iterator = file_iterator_new("/spiffs/mp3");
         }
 
         void mute(bool m)
@@ -49,29 +47,17 @@ namespace app
         void play(void)
         {
             ESP_LOGI(__func__, "button play");
-            static bool playing = false;
-            if (!playing)
+            if (!m_playing)
             {
-                char filename[128];
-                file_iterator_get_full_path_from_index(file_iterator, file_iterator_get_index(file_iterator), filename, sizeof(filename));
-                FILE *fp = fopen(filename, "rb");
-                if (!fp)
-                {
-                    ESP_LOGE(__func__, "unable to open '%s'", filename);
-                    return;
-                }
-                else
-                {
-                    ESP_LOGI(__func__, "playing %s", filename);
-                }
-                audio_player_play(fp);
+                m_fp = fopen("/spiffs/mp3/music.mp3", "rb");
+                audio_player_play(m_fp);
             }
             else
             {
                 audio_player_pause();
             }
 
-            playing = !playing;
+            m_playing = !m_playing;
         }
 
         void volume_up(void)

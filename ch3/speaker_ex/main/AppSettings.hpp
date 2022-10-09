@@ -12,12 +12,12 @@
 
 namespace app
 {
-    class cAppSettings
+    class AppSettings
     {
     private:
         uint8_t m_volume; // 0 - 100%
     public:
-        cAppSettings() : m_volume(50) {}
+        AppSettings() : m_volume(50) {}
         void init(void)
         {
             esp_err_t err = nvs_flash_init();
@@ -34,7 +34,7 @@ namespace app
                 ESP_LOGW(__func__, "settings not found.");
                 updateVolume(50);
             }
-            size_t len = sizeof(cAppSettings);
+            size_t len = sizeof(AppSettings);
             ret = nvs_get_blob(my_handle, KEY, this, &len);
             if (ret != ESP_OK)
             {
@@ -64,7 +64,7 @@ namespace app
             else
             {
                 m_volume = vol;
-                err = nvs_set_blob(my_handle, KEY, this, sizeof(cAppSettings));
+                err = nvs_set_blob(my_handle, KEY, this, sizeof(AppSettings));
                 err |= nvs_commit(my_handle);
                 nvs_close(my_handle);
             }

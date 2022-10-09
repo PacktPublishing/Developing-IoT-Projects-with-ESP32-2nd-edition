@@ -21,103 +21,89 @@
 #include "file_iterator.h"
 
 #include "AppSettings.hpp"
+#include "AppAudio.hpp"
+#include "AppButton.hpp"
 
 static const char *TAG = "main";
+file_iterator_instance_t *file_iterator;
 
 namespace
 {
-    app::cAppSettings m_app_settings;
-}
+    app::AppSettings m_app_settings;
+    app::AppAudio m_app_audio(m_app_settings);
+    app::AppButton m_app_btn;
 
-file_iterator_instance_t *file_iterator;
-
-static esp_err_t audio_mute_function(AUDIO_PLAYER_MUTE_SETTING setting)
-{
-    // Volume saved when muting and restored when unmuting. Restoring volume is necessary
-    // as es8311_set_voice_mute(true) results in voice volume (REG32) being set to zero.
-
-    ESP_RETURN_ON_ERROR(bsp_codec_set_mute(setting == AUDIO_PLAYER_MUTE ? true : false), TAG, "set voice mute");
-
-    // restore the voice volume upon unmuting
-    if (setting == AUDIO_PLAYER_UNMUTE)
+    esp_err_t audio_mute_function(AUDIO_PLAYER_MUTE_SETTING setting)
     {
-        bsp_codec_set_voice_volume(m_app_settings.getVolume());
+        m_app_audio.mute(setting == AUDIO_PLAYER_MUTE);
+        return ESP_OK;
     }
 
-    ESP_LOGI(TAG, "mute setting %d, volume:%d", setting, m_app_settings.getVolume());
-
-    return ESP_OK;
-}
-
-void play_music(void *data)
-{
-    ESP_LOGI(__func__, "button play");
-    static bool playing = false;
-    if (!playing)
+    void play_music(void *data)
     {
-        char filename[128];
-        file_iterator_get_full_path_from_index(file_iterator, file_iterator_get_index(file_iterator), filename, sizeof(filename));
-        FILE *fp = fopen(filename, "rb");
-        if (!fp)
+        ESP_LOGI(__func__, "button play");
+        static bool playing = false;
+        if (!playing)
         {
-            ESP_LOGE(TAG, "unable to open '%s'", filename);
-            return;
+            char filename[128];
+            file_iterator_get_full_path_from_index(file_iterator, file_iterator_get_index(file_iterator), filename, sizeof(filename));
+            FILE *fp = fopen(filename, "rb");
+            if (!fp)
+            {
+                ESP_LOGE(TAG, "unable to open '%s'", filename);
+                return;
+            }
+            else
+            {
+                ESP_LOGI(__func__, "playing %s", filename);
+            }
+            audio_player_play(fp);
         }
         else
         {
-            ESP_LOGI(__func__, "playing %s", filename);
+            audio_player_pause();
         }
-        audio_player_play(fp);
-    }
-    else
-    {
-        audio_player_pause();
+
+        playing = !playing;
     }
 
-    playing = !playing;
-}
-
-void volume_up(void *data)
-{
-    uint8_t volume = m_app_settings.getVolume();
-    if (volume < 100)
+    void volume_up(void *data)
     {
-        volume += 10;
-        ESP_LOGI(__func__, "volume up (%d)", volume);
-        bsp_codec_set_voice_volume(volume);
-        m_app_settings.updateVolume(volume);
+        uint8_t volume = m_app_settings.getVolume();
+        if (volume < 100)
+        {
+            volume += 10;
+            ESP_LOGI(__func__, "volume up (%d)", volume);
+            bsp_codec_set_voice_volume(volume);
+            m_app_settings.updateVolume(volume);
+        }
     }
-}
 
-void volume_down(void *data)
-{
-    uint8_t volume = m_app_settings.getVolume();
-    if (volume > 0)
+    void volume_down(void *data)
     {
-        volume -= 10;
-        ESP_LOGI(__func__, "volume down (%d)", volume);
-        bsp_codec_set_voice_volume(volume);
-        m_app_settings.updateVolume(volume);
+        uint8_t volume = m_app_settings.getVolume();
+        if (volume > 0)
+        {
+            volume -= 10;
+            ESP_LOGI(__func__, "volume down (%d)", volume);
+            bsp_codec_set_voice_volume(volume);
+            m_app_settings.updateVolume(volume);
+        }
     }
 }
 
 extern "C" void app_main(void)
 {
     ESP_LOGI(TAG, "Compile time: %s %s", __DATE__, __TIME__);
-    
-    m_app_settings.init();
 
-    ESP_ERROR_CHECK(bsp_board_init());
-    ESP_ERROR_CHECK(bsp_board_power_ctrl(POWER_MODULE_AUDIO, true));
-    ESP_ERROR_CHECK(bsp_spiffs_init("storage", "/spiffs", 2));
+    m_app_settings.init();
+    m_app_audio.init(audio_mute_function);
+
     file_iterator = file_iterator_new("/spiffs/mp3");
     assert(file_iterator != NULL);
-    audio_player_config_t config = {.port = I2S_NUM_0,
-                                    .mute_fn = audio_mute_function,
-                                    .priority = 1};
-    ESP_ERROR_CHECK(audio_player_new(config));
 
-    bsp_btn_register_callback(BOARD_BTN_ID_PREV, BUTTON_PRESS_DOWN, play_music, NULL);
-    bsp_btn_register_callback(BOARD_BTN_ID_ENTER, BUTTON_PRESS_DOWN, volume_down, NULL);
-    bsp_btn_register_callback(BOARD_BTN_ID_NEXT, BUTTON_PRESS_DOWN, volume_up, NULL);
+    m_app_btn.init(play_music, volume_down, volume_up);
+    // bsp_btn_register_callback(BOARD_BTN_ID_PREV, BUTTON_PRESS_DOWN, play_music, NULL);
+    // bsp_btn_register_callback(BOARD_BTN_ID_ENTER, BUTTON_PRESS_DOWN, volume_down, NULL);
+    // bsp_btn_register_callback(BOARD_BTN_ID_NEXT, BUTTON_PRESS_DOWN, volume_up, NULL);
 }

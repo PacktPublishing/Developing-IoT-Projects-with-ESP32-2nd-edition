@@ -1,3 +1,6 @@
+#include "bsp_board.h"
+#include "bsp_storage.h"
+
 #include "AppSettings.hpp"
 #include "AppAudio.hpp"
 #include "AppButton.hpp"
@@ -32,6 +35,10 @@ namespace
 
 extern "C" void app_main(void)
 {
+    bsp_board_init();
+    bsp_board_power_ctrl(POWER_MODULE_AUDIO, true);
+    bsp_spiffs_init("storage", "/spiffs", 2);
+
     m_app_settings.init();
     m_app_audio.init(audio_mute_function);
     m_app_btn.init(play_music, volume_down, volume_up);

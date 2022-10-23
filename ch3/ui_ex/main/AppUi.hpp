@@ -21,9 +21,9 @@ namespace app
             lv_obj_set_style_text_color(m_label_title, lv_color_make(0, 0, 0), LV_STATE_DEFAULT);
             lv_obj_set_style_text_font(m_label_title, &lv_font_montserrat_24, LV_STATE_DEFAULT);
             lv_label_set_text(m_label_title, "Press a button");
-            lv_obj_align(m_label_title, LV_ALIGN_TOP_MID, 0, 100);
+            lv_obj_align(m_label_title, LV_ALIGN_CENTER, 0, 0);
 
-            xTaskCreatePinnedToCore(lvglTask, "lvgl", 6 * 1024, nullptr, configMAX_PRIORITIES - 3, nullptr, 0);
+            xTaskCreatePinnedToCore(lvglTask, "lvgl", 6 * 1024, nullptr, 3, nullptr, 0);
          
             bsp_lcd_set_backlight(true);
         }

@@ -1,12 +1,10 @@
 #pragma once
 
-#include <sys/time.h>
 #include <mutex>
 
 #include "bsp_lcd.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "freertos/semphr.h"
 #include "lvgl/lvgl.h"
 #include "lv_port/lv_port.h"
 
@@ -27,7 +25,7 @@ namespace app
 
             xTaskCreatePinnedToCore(lvgl_task, "lvgl", 6 * 1024, nullptr, configMAX_PRIORITIES - 3, nullptr, 0);
          
-            bsp_lcd_set_backlight(true); // Turn on the backlight after gui initialize
+            bsp_lcd_set_backlight(true);
         }
 
         void setLabelText(const char *lbl_txt)
@@ -50,7 +48,6 @@ namespace app
                 }
                 vTaskDelay(pdMS_TO_TICKS(10));
             }
-            vTaskDelete(NULL);
         }
     };
 

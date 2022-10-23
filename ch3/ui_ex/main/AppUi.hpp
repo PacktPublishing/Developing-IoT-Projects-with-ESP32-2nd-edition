@@ -23,7 +23,7 @@ namespace app
             lv_label_set_text(m_label_title, "Press a button");
             lv_obj_align(m_label_title, LV_ALIGN_TOP_MID, 0, 100);
 
-            xTaskCreatePinnedToCore(lvgl_task, "lvgl", 6 * 1024, nullptr, configMAX_PRIORITIES - 3, nullptr, 0);
+            xTaskCreatePinnedToCore(lvglTask, "lvgl", 6 * 1024, nullptr, configMAX_PRIORITIES - 3, nullptr, 0);
          
             bsp_lcd_set_backlight(true);
         }
@@ -35,10 +35,11 @@ namespace app
         }
 
     private:
-        static std::mutex m_ui_access;
         lv_obj_t *m_label_title;
 
-        static void lvgl_task(void *param)
+        static std::mutex m_ui_access;
+
+        static void lvglTask(void *param)
         {
             while (true)
             {

@@ -21,7 +21,8 @@ namespace app
     private:
         SensorData readings[100];
         int cnt = 0;
-        std::function<void(const uint8_t *, size_t)> save_func;
+        std::function<void(const uint8_t *, size_t)> save;
+
         static void read(void *d)
         {
             AppSensor *sensor = reinterpret_cast<AppSensor *>(d);
@@ -33,7 +34,7 @@ namespace app
                 if (sensor->cnt == 100)
                 {
                     sensor->cnt = 0;
-                    sensor->save_func(reinterpret_cast<const uint8_t *>(sensor->readings), 100 * sizeof(SensorData));
+                    sensor->save(reinterpret_cast<const uint8_t *>(sensor->readings), 100 * sizeof(SensorData));
                 }
             }
         }
@@ -41,7 +42,7 @@ namespace app
     public:
         void init(std::function<void(const uint8_t *, size_t)> fn)
         {
-            save_func = fn;
+            save = fn;
             if (xTaskCreate(AppSensor::read,
                             "sensor",
                             3072,

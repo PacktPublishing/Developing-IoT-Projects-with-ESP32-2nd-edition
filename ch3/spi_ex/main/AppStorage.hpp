@@ -39,7 +39,7 @@ namespace app
         esp_err_t init(void)
         {
             esp_err_t ret{ESP_OK};
-            esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+            esp_vfs_fat_mount_config_t mount_config = {
                 .format_if_mount_failed = true,
                 .max_files = 5,
                 .allocation_unit_size = 16 * 1024};

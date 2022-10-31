@@ -30,12 +30,6 @@ extern "C" void app_main(void)
 
 namespace
 {
-    esp_err_t audio_mute_function(AUDIO_PLAYER_MUTE_SETTING setting)
-    {
-        m_app_audio.mute(setting == AUDIO_PLAYER_MUTE);
-        return ESP_OK;
-    }
-
     void play_music(void *data)
     {
         m_app_audio.play();
@@ -50,4 +44,11 @@ namespace
     {
         m_app_audio.volume_down();
     }
+
+    esp_err_t audio_mute_function(AUDIO_PLAYER_MUTE_SETTING setting)
+    {
+        m_app_audio.mute(setting == AUDIO_PLAYER_MUTE);
+        return ESP_OK;
+    }
+
 }

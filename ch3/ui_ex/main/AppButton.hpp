@@ -12,6 +12,8 @@ namespace app
     using btn_handler_f = void (*)(void *);
     class AppButton
     {
+    private:
+        int m_type;
     public:
         AppButton(int type) : m_type(type) {}
         int getType(void) { return m_type; }
@@ -28,7 +30,5 @@ namespace app
             return *(reinterpret_cast<app::AppButton *>(btn_dev->cb_user_data));
         }
 
-    private:
-        int m_type;
     };
 }

@@ -1,0 +1,106 @@
+menu "ESP RainMaker Common"
+
+    choice ESP_RMAKER_MQTT_GLUE_LIB
+        bool "MQTT Library"
+        default ESP_RMAKER_LIB_ESP_MQTT
+        help
+            MQTT Library to be used
+
+        config ESP_RMAKER_LIB_ESP_MQTT
+            bool "ESP-MQTT"
+        config ESP_RMAKER_LIB_AWS_IOT
+            bool "AWS-IOT"
+    endchoice
+
+    config ESP_RMAKER_MQTT_GLUE_LIB
+        int
+        default 1 if ESP_RMAKER_LIB_ESP_MQTT
+        default 2 if ESP_RMAKER_LIB_AWS_IOT
+
+    choice ESP_RMAKER_MQTT_PORT
+        bool "MQTT Port"
+        default ESP_RMAKER_MQTT_PORT_443
+        help
+            ESP RainMaker MQTT Broker can be connected to either on Port 8883 or port 443.
+            Port 443 is recommended as it is generally not blocked by any firewalls,
+            since it is standard HTTPS port.
+
+        config ESP_RMAKER_MQTT_PORT_443
+            bool "443"
+        config ESP_RMAKER_MQTT_PORT_8883
+            bool "8883"
+    endchoice
+
+    config ESP_RMAKER_MQTT_PORT
+        int
+        default 1 if ESP_RMAKER_MQTT_PORT_443
+        default 2 if ESP_RMAKER_MQTT_PORT_8883
+    
+    config ESP_RMAKER_MQTT_PERSISTENT_SESSION
+        bool "Use Persisent MQTT sessions"
+        default n
+        help
+            Use persistent MQTT sessions. This improves reliability as QOS1 messages missed
+            out due to some network issue are received after the MQTT reconnects. The broker
+            caches messages for a period of upto 1hour. However, a side-effect of this is that
+            messages can be received at unexpected time. Enable this option only if it suits
+            your use case. Please read MQTT specs to understand more about persistent sessions
+            and the cleanSession flag.
+
+    config ESP_RMAKER_MQTT_SEND_USERNAME
+        bool "Send MQTT Username"
+        default y
+        help
+            Send a Username during MQTT Connect. This is generally required only for tracking
+            the MQTT client types, platform, SDK, etc. in AWS.
+
+    config ESP_RMAKER_MQTT_USERNAME
+        string "MQTT Username"
+        depends on ESP_RMAKER_MQTT_SEND_USERNAME
+        default "?Platform=APN/1 ESPIF,RAINMAKER,v1.0"
+        help
+            Username to be passed during MQTT Connect. This is generally used only for tracking
+            the MQTT client types, platform, SDK, etc. in AWS. Please do not change unless required.
+
+    config ESP_RMAKER_WORK_QUEUE_TASK_STACK
+        int "ESP RainMaker Work Queue Task stack"
+        default 4096
+        help
+            Stack size for the ESP RainMaker Work Queue Task.
+
+    config ESP_RMAKER_WORK_QUEUE_TASK_PRIORITY
+        int "ESP RainMaker Work Queue Task priority"
+        default 5
+        help
+            Priority for the ESP RainMaker Work Queue Task. Not recommended to be changed
+            unless you really need it.
+
+    config ESP_RMAKER_FACTORY_PARTITION_NAME
+        string "ESP RainMaker Factory Partition Name"
+        default "fctry"
+        help
+            Factory NVS Partition name which will have the MQTT connectivity credentials.
+
+    config ESP_RMAKER_FACTORY_NAMESPACE
+        string "ESP RainMaker Factory Namespace"
+        default "rmaker_creds"
+        help
+            Namespace in the Factory NVS Partition name which will have the MQTT
+            connectivity credentials.
+
+    config ESP_RMAKER_DEF_TIMEZONE
+        string "Default Timezone"
+        default "Asia/Shanghai"
+        help
+            Default Timezone to use. Eg. "Asia/Shanghai", "America/Los_Angeles".
+            Check documentation for complete list of valid values. This value
+            will be used only if no timezone is set using the C APIs.
+
+    config ESP_RMAKER_SNTP_SERVER_NAME
+        string "ESP RainMaker SNTP Server Name"
+        default "pool.ntp.org"
+        help
+            Default SNTP Server which is used for time synchronization.
+
+
+endmenu

@@ -3,3 +3,4 @@ tmp/
 .pio
 *.old
 build*/
+dependencies.lock

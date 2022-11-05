@@ -1,7 +1,11 @@
 #include "AppNavigator.hpp"
 
-extern "C" void app_main(void)
+namespace
 {
     app::AppNavigator nav;
+}
+
+extern "C" void app_main(void)
+{
     nav.init();
 }

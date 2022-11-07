@@ -40,7 +40,7 @@ namespace app
             size_t outpos = 0;
             while (inbytes != len)
             {
-                outbytes = len - outpos;
+                outbytes = BUFFERSIZE - outpos;
                 inbytes = len - inpos;
                 tdefl_compress(&m_comp, &m_data_buffer[inpos], &inbytes, &m_compressed_buffer[outpos], &outbytes, TDEFL_FINISH);
                 inpos += inbytes;

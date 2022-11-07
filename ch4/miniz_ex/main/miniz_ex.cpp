@@ -39,8 +39,8 @@ namespace
     {
         // m_zip.test(sample_zip, sizeof(sample_zip));
         ESP_LOGI(__func__, "decompressing data (len=%u)", m_data_len);
-        m_decompressed_data = m_zip.unzip(m_compressed_data, m_data_len);
-        ESP_LOGI(__func__, "%.*s", strlen(s_pStr), m_decompressed_data);
+        m_decompressed_data = m_zip.unzip(m_compressed_data, &m_data_len);
+        ESP_LOGI(__func__, "%.*s", m_data_len, m_decompressed_data);
     }
 }
 

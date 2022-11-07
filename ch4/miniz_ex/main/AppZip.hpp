@@ -1,11 +1,8 @@
 #pragma once
 
 #include <cstring>
-
 #include "esp_log.h"
 #include "esp_heap_caps.h"
-#include "mbedtls/base64.h"
-
 #include "rom/miniz.h"
 
 namespace app
@@ -21,6 +18,13 @@ namespace app
         tinfl_decompressor m_decomp;
 
     public:
+        void init(void)
+        {
+            m_data_buffer = (char *)heap_caps_malloc(DATASIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+            m_compressed_buffer = (char *)heap_caps_malloc(DATASIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+            m_decompressed_buffer = (char *)heap_caps_malloc(DATASIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+        }
+
         char *zip(const char *data, size_t *len)
         {
             tdefl_init(&m_comp, NULL, NULL, TDEFL_WRITE_ZLIB_HEADER | 1500);
@@ -40,21 +44,21 @@ namespace app
             return m_compressed_buffer;
         }
 
-        char *unzip(const char *data, size_t len)
+        char *unzip(const char *data, size_t *len)
         {
             tinfl_init(&m_decomp);
             if (data != m_compressed_buffer)
             {
                 memset(m_compressed_buffer, 0, DATASIZE);
-                memcpy(m_compressed_buffer, data, len);
+                memcpy(m_compressed_buffer, data, *len);
             }
             size_t inbytes = 0, outbytes = 0, inpos = 0, outpos = 0;
             inpos = 0;
             outpos = 0;
-            while (inbytes != len)
+            while (inbytes != *len)
             {
                 outbytes = DATASIZE - outpos;
-                inbytes = len - inpos;
+                inbytes = *len - inpos;
                 tinfl_decompress(&m_decomp, (const mz_uint8 *)&m_compressed_buffer[inpos], &inbytes, (uint8_t *)m_decompressed_buffer, (mz_uint8 *)&m_decompressed_buffer[outpos], &outbytes, TINFL_FLAG_PARSE_ZLIB_HEADER);
                 inpos += inbytes;
                 outpos += outbytes;
@@ -63,15 +67,9 @@ namespace app
                     break;
                 }
             }
+            *len = outpos;
 
             return m_decompressed_buffer;
-        }
-
-        void init(void)
-        {
-            m_data_buffer = (char *)heap_caps_malloc(DATASIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-            m_compressed_buffer = (char *)heap_caps_malloc(DATASIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-            m_decompressed_buffer = (char *)heap_caps_malloc(DATASIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
         }
     };
 }

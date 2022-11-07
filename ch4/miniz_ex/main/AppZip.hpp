@@ -3,6 +3,7 @@
 #include <cstring>
 #include "esp_log.h"
 #include "esp_heap_caps.h"
+#include "esp_system.h"
 #include "rom/miniz.h"
 
 namespace app
@@ -20,9 +21,11 @@ namespace app
     public:
         void init(void)
         {
+            ESP_LOGI(__func__, "Free heap (before alloc): %u", esp_get_free_heap_size());
             m_data_buffer = (char *)heap_caps_malloc(BUFFERSIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
             m_compressed_buffer = (char *)heap_caps_malloc(BUFFERSIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
             m_decompressed_buffer = (char *)heap_caps_malloc(BUFFERSIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+            ESP_LOGI(__func__, "Free heap (after alloc): %u", esp_get_free_heap_size());
         }
 
         char *zip(const char *data, size_t &len)

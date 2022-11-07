@@ -3,24 +3,12 @@
 #include <cstring>
 #include "esp_log.h"
 
-// unsigned char * base64_encode(const unsigned char *src, size_t len, size_t *out_len);
-
-// int mbedtls_base64_encode( unsigned char *dst, size_t dlen, size_t *olen, const unsigned char *src, size_t slen )
-
-// $ echo AQIDBAUGBwgJCgsM | base64 -d | od -t x8 -An --endian=big
-
-// $ echo AQIDBAUGBwgJCgsM | base64 -d > 1.l
-// $ xxd 1.l
-
 namespace
 {
-    const char *s_pStr = "Good morning Dr. Chandra. This is Hal. I am ready for my first lesson."
-                         "Good morning Dr. Chandra. This is Hal. I am ready for my first lesson."
-                         "Good morning Dr. Chandra. This is Hal. I am ready for my first lesson."
-                         "Good morning Dr. Chandra. This is Hal. I am ready for my first lesson."
-                         "Good morning Dr. Chandra. This is Hal. I am ready for my first lesson."
-                         "Good morning Dr. Chandra. This is Hal. I am ready for my first lesson."
-                         "Good morning Dr. Chandra. This is Hal. I am ready for my first lesson.";
+    const char *m_test_str = "this is a repeating text to be compressed. you can try anything\n"
+                             "this is a repeating text to be compressed. you can try anything\n"
+                             "this is a repeating text to be compressed. you can try anything\n"
+                             "this is a repeating text to be compressed. you can try anything";
 
     app::AppButton m_btn;
     app::AppZip m_zip;
@@ -30,9 +18,10 @@ namespace
 
     void leftBtnForZip(void *btn_ptr)
     {
-        m_data_len = strlen(s_pStr);
-        m_compressed_data = m_zip.zip(s_pStr, m_data_len);
-        ESP_LOGI(__func__, "compressed to %u", m_data_len);
+        m_data_len = strlen(m_test_str);
+        m_compressed_data = m_zip.zip(m_test_str, m_data_len);
+        ESP_LOGI(__func__, "compressed to %u from %u", m_data_len, strlen(m_test_str));
+        ESP_LOG_BUFFER_HEX(__func__, m_compressed_data, m_data_len);
     }
 
     void middleBtnForUnzip(void *btn_ptr)

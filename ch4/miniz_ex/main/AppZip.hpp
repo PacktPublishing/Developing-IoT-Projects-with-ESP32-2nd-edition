@@ -69,10 +69,6 @@ namespace app
                 tinfl_decompress(&m_decomp, (const mz_uint8 *)&m_compressed_buffer[inpos], &inbytes, (uint8_t *)m_decompressed_buffer, (mz_uint8 *)&m_decompressed_buffer[outpos], &outbytes, TINFL_FLAG_PARSE_ZLIB_HEADER);
                 inpos += inbytes;
                 outpos += outbytes;
-                if (outbytes == 0)
-                {
-                    break;
-                }
             }
             len = outpos;
 

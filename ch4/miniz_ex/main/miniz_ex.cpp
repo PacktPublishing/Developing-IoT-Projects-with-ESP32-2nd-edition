@@ -31,14 +31,13 @@ namespace
     void leftBtnForZip(void *btn_ptr)
     {
         m_data_len = strlen(s_pStr);
-        m_compressed_data = m_zip.zip(s_pStr, &m_data_len);
+        m_compressed_data = m_zip.zip(s_pStr, m_data_len);
         ESP_LOGI(__func__, "compressed to %u", m_data_len);
     }
 
     void middleBtnForUnzip(void *btn_ptr)
     {
-        ESP_LOGI(__func__, "decompressing data (len=%u)", m_data_len);
-        m_decompressed_data = m_zip.unzip(m_compressed_data, &m_data_len);
+        m_decompressed_data = m_zip.unzip(m_compressed_data, m_data_len);
         ESP_LOGI(__func__, "%.*s", m_data_len, m_decompressed_data);
     }
 }

@@ -1,6 +1,9 @@
 #include <cinttypes>
 #include "esp_log.h"
 #include "esp_heap_caps.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 #include "AppButton.hpp"
 #include "AppLdrLogger.hpp"
 
@@ -23,6 +26,11 @@ namespace
         std::string json = m_logger.getJson(m_buffer);
         ESP_LOGI(__func__, "%s", json.c_str());
     }
+
+    void loggerTask(void *param)
+    {
+        m_logger.run();
+    }
 }
 
 extern "C" void app_main(void)
@@ -31,4 +39,6 @@ extern "C" void app_main(void)
 
     m_btn.init(binarySerialize, jsonSerialize);
     m_logger.init();
+
+    xTaskCreate(loggerTask, "logger", 3072, nullptr, 5, nullptr);
 }

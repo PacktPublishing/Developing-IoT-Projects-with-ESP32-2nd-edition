@@ -31,10 +31,12 @@ namespace app
             m_light_sensor.location = "office";
         }
 
-        void start(void)
+        void run(void)
         {
             while (1)
             {
+                vTaskDelay(pdMS_TO_TICKS(5000));
+
                 uint32_t adc_val = 0;
                 for (int i = 0; i < 32; ++i)
                 {
@@ -45,8 +47,6 @@ namespace app
                 reading->timestamp = esp_log_timestamp();
                 reading->light = (uint16_t)adc_val;
                 m_light_sensor.readings.push_back(std::move(reading));
-
-                vTaskDelay(pdMS_TO_TICKS(5000));
             }
         }
 

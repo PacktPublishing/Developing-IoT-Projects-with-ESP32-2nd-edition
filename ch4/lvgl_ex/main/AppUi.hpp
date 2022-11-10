@@ -50,10 +50,9 @@ namespace app
             bsp_lcd_set_backlight(true);
         }
 
-        void buttonEventHandler(void *param)
+        void buttonEventHandler(sAppButtonEvent &btn_evt)
         {
             std::lock_guard<std::mutex> lock(m_ui_access);
-            app::sAppButtonEvent &btn_evt = *(reinterpret_cast<app::sAppButtonEvent *>(param));
             switch (btn_evt.btn_id)
             {
             case board_btn_id_t::BOARD_BTN_ID_PREV:

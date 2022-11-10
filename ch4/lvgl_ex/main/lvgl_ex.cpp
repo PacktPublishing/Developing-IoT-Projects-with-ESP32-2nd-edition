@@ -12,12 +12,12 @@ namespace
 extern "C" void app_main(void)
 {
     bsp_board_init();
-    m_app_ui.init();
 
-    auto btn_evt_handler = [](void *param)
+    auto btn_evt_handler = [](app::sAppButtonEvent &e)
     {
-        m_app_ui.buttonEventHandler(param);
+        m_app_ui.buttonEventHandler(e);
     };
 
+    m_app_ui.init();
     m_app_btn.init(btn_evt_handler);
 }

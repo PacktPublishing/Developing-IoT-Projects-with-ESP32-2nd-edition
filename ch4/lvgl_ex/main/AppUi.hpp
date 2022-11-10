@@ -57,21 +57,99 @@ namespace app
             switch (btn_evt.btn_id)
             {
             case board_btn_id_t::BOARD_BTN_ID_PREV:
-            {
                 m_scr_pos = (m_scr_pos - 1) % m_screens.size();
                 lv_scr_load(m_screens[m_scr_pos]);
-            }
-            break;
+                break;
 
             case board_btn_id_t::BOARD_BTN_ID_NEXT:
-            {
                 m_scr_pos = (m_scr_pos + 1) % m_screens.size();
                 lv_scr_load(m_screens[m_scr_pos]);
+                break;
+
+            case board_btn_id_t::BOARD_BTN_ID_ENTER:
+            {
+                switch (m_scr_pos)
+                {
+                case 0:
+                    updateTextArea(btn_evt.evt_id);
+                    break;
+                case 1:
+                    updateLvButtonState(btn_evt.evt_id);
+                    break;
+                case 2:
+                    toggleSwitch(btn_evt.evt_id);
+                    break;
+                case 3:
+                    toggleSpinnerVisibility(btn_evt.evt_id);
+                    break;
+                default:
+                    break;
+                }
             }
             break;
 
             default:
                 break;
+            }
+        }
+
+        void updateTextArea(button_event_t btn_evt_id)
+        {
+            if (btn_evt_id == button_event_t::BUTTON_PRESS_DOWN)
+            {
+                lv_textarea_add_text(ui_Screen1_TextArea1, "button down\n");
+            }
+            else
+            {
+                lv_textarea_add_text(ui_Screen1_TextArea1, "button up\n");
+            }
+        }
+
+        void updateLvButtonState(button_event_t btn_evt_id)
+        {
+            if (btn_evt_id == button_event_t::BUTTON_PRESS_DOWN)
+            {
+                lv_obj_clear_state(ui_Screen2_Button1, LV_STATE_DEFAULT);
+                lv_obj_add_state(ui_Screen2_Button1, LV_STATE_PRESSED);
+            }
+            else
+            {
+                lv_obj_clear_state(ui_Screen2_Button1, LV_STATE_PRESSED);
+                lv_obj_add_state(ui_Screen2_Button1, LV_STATE_DEFAULT);
+            }
+        }
+
+        void toggleSwitch(button_event_t btn_evt_id)
+        {
+            static bool checked{false};
+            if (btn_evt_id == button_event_t::BUTTON_PRESS_UP)
+            {
+                checked = !checked;
+                if (checked)
+                {
+                    lv_obj_clear_state(ui_Screen3_Switch1, LV_STATE_CHECKED);
+                }
+                else
+                {
+                    lv_obj_add_state(ui_Screen3_Switch1, LV_STATE_CHECKED);
+                }
+            }
+        }
+
+        void toggleSpinnerVisibility(button_event_t btn_evt_id)
+        {
+            static bool hidden{false};
+            if (btn_evt_id == button_event_t::BUTTON_PRESS_UP)
+            {
+                hidden = !hidden;
+                if (hidden)
+                {
+                    lv_obj_add_flag(ui_Screen4_Spinner1, LV_OBJ_FLAG_HIDDEN);
+                }
+                else
+                {
+                    lv_obj_clear_flag(ui_Screen4_Spinner1, LV_OBJ_FLAG_HIDDEN);
+                }
             }
         }
     };

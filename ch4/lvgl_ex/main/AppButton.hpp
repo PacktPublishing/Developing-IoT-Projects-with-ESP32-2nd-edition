@@ -5,10 +5,8 @@
 
 namespace
 {
-    void left_btn_pressed_down(void *param);
-    void right_btn_pressed_down(void *param);
-    void middle_btn_pressed_down(void *param);
-    void middle_btn_released(void *param);
+    template <board_btn_id_t I, button_event_t E>
+    void button_event_handler(void *param);
 }
 
 namespace app
@@ -30,10 +28,14 @@ namespace app
         void init(fAppButtonCallback cb)
         {
             m_btn_cb = cb;
-            bsp_btn_register_callback(BOARD_BTN_ID_PREV, BUTTON_PRESS_DOWN, left_btn_pressed_down, this);
-            bsp_btn_register_callback(BOARD_BTN_ID_NEXT, BUTTON_PRESS_DOWN, right_btn_pressed_down, this);
-            bsp_btn_register_callback(BOARD_BTN_ID_ENTER, BUTTON_PRESS_DOWN, middle_btn_pressed_down, this);
-            bsp_btn_register_callback(BOARD_BTN_ID_ENTER, BUTTON_PRESS_UP, middle_btn_released, this);
+            bsp_btn_register_callback(BOARD_BTN_ID_PREV, BUTTON_PRESS_DOWN,
+                                      button_event_handler<BOARD_BTN_ID_PREV, BUTTON_PRESS_DOWN>, this);
+            bsp_btn_register_callback(BOARD_BTN_ID_NEXT, BUTTON_PRESS_DOWN,
+                                      button_event_handler<BOARD_BTN_ID_NEXT, BUTTON_PRESS_DOWN>, this);
+            bsp_btn_register_callback(BOARD_BTN_ID_ENTER, BUTTON_PRESS_DOWN,
+                                      button_event_handler<BOARD_BTN_ID_ENTER, BUTTON_PRESS_DOWN>, this);
+            bsp_btn_register_callback(BOARD_BTN_ID_ENTER, BUTTON_PRESS_UP,
+                                      button_event_handler<BOARD_BTN_ID_ENTER, BUTTON_PRESS_UP>, this);                                                                            
         }
 
         static AppButton &getObject(void *btn_ptr)
@@ -51,28 +53,11 @@ namespace app
 
 namespace
 {
-    void left_btn_pressed_down(void *param)
+    template <board_btn_id_t I, button_event_t E>
+    void button_event_handler(void *param)
     {
         app::AppButton &app_btn = app::AppButton::getObject(param);
-        app::sAppButtonEvent e{BOARD_BTN_ID_PREV, BUTTON_PRESS_DOWN};
-        app_btn.runCallback(e);
-    }
-    void right_btn_pressed_down(void *param)
-    {
-        app::AppButton &app_btn = app::AppButton::getObject(param);
-        app::sAppButtonEvent e{BOARD_BTN_ID_NEXT, BUTTON_PRESS_DOWN};
-        app_btn.runCallback(e);
-    }
-    void middle_btn_pressed_down(void *param)
-    {
-        app::AppButton &app_btn = app::AppButton::getObject(param);
-        app::sAppButtonEvent e{BOARD_BTN_ID_ENTER, BUTTON_PRESS_DOWN};
-        app_btn.runCallback(e);
-    }
-    void middle_btn_released(void *param)
-    {
-        app::AppButton &app_btn = app::AppButton::getObject(param);
-        app::sAppButtonEvent e{BOARD_BTN_ID_ENTER, BUTTON_PRESS_UP};
+        app::sAppButtonEvent e{I, E};
         app_btn.runCallback(e);
     }
 }

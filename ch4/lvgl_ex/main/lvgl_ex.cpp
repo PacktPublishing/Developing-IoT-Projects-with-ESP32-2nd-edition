@@ -14,18 +14,10 @@ extern "C" void app_main(void)
     bsp_board_init();
     m_app_ui.init();
 
-    auto l = [](void *param)
+    auto btn_evt_handler = [](void *param)
     {
-        m_app_ui.buttonLeftClick(param);
-    };
-    auto m = [](void *param)
-    {
-        m_app_ui.buttonMiddleClick(param);
-    };
-    auto r = [](void *param)
-    {
-        m_app_ui.buttonRightClick(param);
+        m_app_ui.buttonEventHandler(param);
     };
 
-    m_app_btn.init(l, m, r);
+    m_app_btn.init(btn_evt_handler);
 }

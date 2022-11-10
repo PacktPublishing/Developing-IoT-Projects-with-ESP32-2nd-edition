@@ -10,16 +10,21 @@
 extern "C" {
 #endif
 
-#include "lvgl/lvgl.h"
+#include "lvgl.h"
 
 extern lv_obj_t * ui_Screen1;
 extern lv_obj_t * ui_Screen1_Label1;
-void ui_event_scr1btn1(lv_event_t * e);
-extern lv_obj_t * ui_scr1btn1;
-extern lv_obj_t * ui_Screen1_Label2;
+extern lv_obj_t * ui_Screen1_TextArea1;
 extern lv_obj_t * ui_Screen2;
+extern lv_obj_t * ui_Screen1_Label2;
+extern lv_obj_t * ui_Screen2_Button1;
+extern lv_obj_t * ui_Screen3;
+extern lv_obj_t * ui_Screen1_Label3;
+extern lv_obj_t * ui_Screen3_Switch1;
+extern lv_obj_t * ui_Screen4;
+extern lv_obj_t * ui_Screen1_Label4;
+extern lv_obj_t * ui_Screen4_Spinner1;
 
-void scr1btn1clicked_handler(lv_event_t * e);
 
 
 

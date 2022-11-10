@@ -12,6 +12,7 @@ lv_obj_t * ui_Screen1_Label1;
 lv_obj_t * ui_Screen1_TextArea1;
 lv_obj_t * ui_Screen2;
 lv_obj_t * ui_Screen1_Label2;
+void ui_event_Screen2_Button1(lv_event_t * e);
 lv_obj_t * ui_Screen2_Button1;
 lv_obj_t * ui_Screen3;
 lv_obj_t * ui_Screen1_Label3;
@@ -31,6 +32,17 @@ lv_obj_t * ui_Screen4_Spinner1;
 ///////////////////// ANIMATIONS ////////////////////
 
 ///////////////////// FUNCTIONS ////////////////////
+void ui_event_Screen2_Button1(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+    lv_obj_t * target = lv_event_get_target(e);
+    if(event_code == LV_EVENT_PRESSED) {
+        scr2btn1_handler(e);
+    }
+    if(event_code == LV_EVENT_RELEASED) {
+        scr2btn1_handler(e);
+    }
+}
 
 ///////////////////// SCREENS ////////////////////
 void ui_Screen1_screen_init(void)
@@ -78,6 +90,8 @@ void ui_Screen2_screen_init(void)
     lv_obj_set_align(ui_Screen2_Button1, LV_ALIGN_CENTER);
     lv_obj_add_flag(ui_Screen2_Button1, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
     lv_obj_clear_flag(ui_Screen2_Button1, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    lv_obj_add_event_cb(ui_Screen2_Button1, ui_event_Screen2_Button1, LV_EVENT_ALL, NULL);
 
 }
 void ui_Screen3_screen_init(void)

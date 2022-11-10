@@ -109,13 +109,11 @@ namespace app
         {
             if (btn_evt_id == button_event_t::BUTTON_PRESS_DOWN)
             {
-                lv_obj_clear_state(ui_Screen2_Button1, LV_STATE_DEFAULT);
-                lv_obj_add_state(ui_Screen2_Button1, LV_STATE_PRESSED);
+                lv_event_send(ui_Screen2_Button1, LV_EVENT_PRESSED, nullptr);
             }
             else
             {
-                lv_obj_clear_state(ui_Screen2_Button1, LV_STATE_PRESSED);
-                lv_obj_add_state(ui_Screen2_Button1, LV_STATE_DEFAULT);
+                lv_event_send(ui_Screen2_Button1, LV_EVENT_RELEASED, nullptr);
             }
         }
 
@@ -127,11 +125,11 @@ namespace app
                 checked = !checked;
                 if (checked)
                 {
-                    lv_obj_clear_state(ui_Screen3_Switch1, LV_STATE_CHECKED);
+                    lv_obj_add_state(ui_Screen3_Switch1, LV_STATE_CHECKED);
                 }
                 else
                 {
-                    lv_obj_add_state(ui_Screen3_Switch1, LV_STATE_CHECKED);
+                    lv_obj_clear_state(ui_Screen3_Switch1, LV_STATE_CHECKED);
                 }
             }
         }

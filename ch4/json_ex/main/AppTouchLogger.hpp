@@ -12,28 +12,28 @@
 
 namespace app
 {
-    struct AppTouch_t
+    struct TouchEvent_t
     {
         uint32_t timestamp;
         uint32_t pad_num;
         uint32_t intr_mask;
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AppTouch_t, timestamp, pad_num, intr_mask);
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TouchEvent_t, timestamp, pad_num, intr_mask);
 
     class AppTouchLogger
     {
     private:
         constexpr static const char *TAG{"touch_logger"};
-        std::vector<AppTouch_t> m_touch_list;
+        std::vector<TouchEvent_t> m_touch_list;
 
         static void touchsensor_interrupt_cb(void *arg)
         {
-            AppTouch_t app_touch{esp_log_timestamp(),
-                                 touch_pad_get_current_meas_channel(),
-                                 touch_pad_read_intr_status_mask()};
+            TouchEvent_t touch_event{esp_log_timestamp(),
+                                     touch_pad_get_current_meas_channel(),
+                                     touch_pad_read_intr_status_mask()};
 
             AppTouchLogger &obj = *(reinterpret_cast<AppTouchLogger *>(arg));
-            obj.m_touch_list.push_back(app_touch);
+            obj.m_touch_list.push_back(touch_event);
         }
 
     public:

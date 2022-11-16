@@ -12,7 +12,7 @@
 
 #include "flatbuffers/idl.h"
 #include "flatbuffers/util.h"
-#include "flatbuffers/minireflect.h"
+// #include "flatbuffers/minireflect.h"
 #include "app_data_generated.h"
 
 namespace app
@@ -50,7 +50,7 @@ namespace app
             }
         }
 
-        size_t getBinary(uint8_t *buffer)
+        size_t serialize(uint8_t *buffer)
         {
             flatbuffers::FlatBufferBuilder fbb;
             fbb.Finish(ReadingsFb::Pack(fbb, &m_light_sensor));
@@ -58,11 +58,6 @@ namespace app
             size_t len = fbb.GetSize();
             m_light_sensor.readings.clear();
             return len;
-        }
-
-        std::string getJson(const uint8_t *buffer)
-        {
-            return flatbuffers::FlatBufferToString(buffer, ReadingsFbTypeTable());
         }
     };
 }

@@ -6,6 +6,7 @@
 
 #include "AppButton.hpp"
 #include "AppLdrLogger.hpp"
+#include "app_data_generated.h"
 
 namespace
 {
@@ -14,18 +15,6 @@ namespace
 
     app::AppButton m_btn;
     app::AppLdrLogger m_logger;
-
-    void binarySerialize(void *btn_ptr)
-    {
-        size_t len = m_logger.getBinary(m_buffer);
-        ESP_LOG_BUFFER_HEX(__func__, m_buffer, len);
-    }
-
-    void jsonSerialize(void *btn_ptr)
-    {
-        std::string json = m_logger.getJson(m_buffer);
-        ESP_LOGI(__func__, "%s", json.c_str());
-    }
 
     void loggerTask(void *param)
     {
@@ -37,7 +26,26 @@ extern "C" void app_main(void)
 {
     m_buffer = reinterpret_cast<uint8_t *>(heap_caps_malloc(BUFFERSIZE, MALLOC_CAP_SPIRAM));
 
-    m_btn.init(binarySerialize, jsonSerialize);
+    auto serialize = [](void *)
+    {
+        ESP_LOGI(__func__, "serializing..");
+        size_t len = m_logger.serialize(m_buffer);
+        ESP_LOG_BUFFER_HEX(__func__, m_buffer, len);
+    };
+
+    auto deserialize = [](void *)
+    {
+        ESP_LOGI(__func__, "deserializing..");
+        app::ReadingsFbT light_sensor;
+        app::GetReadingsFb(m_buffer)->UnPackTo(&light_sensor);
+        ESP_LOGI(__func__, "location: %s", light_sensor.location.c_str());
+        for (auto&& rec : light_sensor.readings)
+        {
+            ESP_LOGI(__func__, "ts: %u, light: %d", rec->timestamp, rec->light);
+        }
+    };
+
+    m_btn.init(serialize, deserialize);
     m_logger.init();
 
     xTaskCreate(loggerTask, "logger", 3072, nullptr, 5, nullptr);

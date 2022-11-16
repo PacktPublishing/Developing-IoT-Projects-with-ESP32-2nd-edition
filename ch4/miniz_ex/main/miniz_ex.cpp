@@ -1,7 +1,7 @@
-#include "AppButton.hpp"
-#include "AppZip.hpp"
 #include <cstring>
 #include "esp_log.h"
+#include "AppButton.hpp"
+#include "AppZip.hpp"
 
 namespace
 {
@@ -16,7 +16,7 @@ namespace
     char *m_compressed_data;
     char *m_decompressed_data;
 
-    void leftBtnForZip(void *btn_ptr)
+    void zipBtn(void *btn_ptr)
     {
         m_data_len = strlen(m_test_str);
         m_compressed_data = m_zip.zip(m_test_str, m_data_len);
@@ -24,7 +24,7 @@ namespace
         ESP_LOG_BUFFER_HEX(__func__, m_compressed_data, m_data_len);
     }
 
-    void middleBtnForUnzip(void *btn_ptr)
+    void unzipBtn(void *btn_ptr)
     {
         m_decompressed_data = m_zip.unzip(m_compressed_data, m_data_len);
         ESP_LOGI(__func__, "%.*s", m_data_len, m_decompressed_data);
@@ -34,5 +34,5 @@ namespace
 extern "C" void app_main(void)
 {
     m_zip.init();
-    m_btn.init(leftBtnForZip, middleBtnForUnzip);
+    m_btn.init(zipBtn, unzipBtn);
 }

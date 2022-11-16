@@ -71,7 +71,6 @@ namespace app
                 outpos += outbytes;
             }
             len = outpos;
-
             return m_decompressed_buffer;
         }
     };

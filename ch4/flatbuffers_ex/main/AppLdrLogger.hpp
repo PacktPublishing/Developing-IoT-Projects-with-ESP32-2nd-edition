@@ -1,4 +1,3 @@
-//$ tmp/flatc  -b -t -c --gen-object-api --reflect-names app_data.fbs
 
 #pragma once
 
@@ -12,7 +11,6 @@
 
 #include "flatbuffers/idl.h"
 #include "flatbuffers/util.h"
-// #include "flatbuffers/minireflect.h"
 #include "app_data_generated.h"
 
 namespace app

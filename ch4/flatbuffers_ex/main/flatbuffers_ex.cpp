@@ -6,7 +6,7 @@
 
 #include "AppButton.hpp"
 #include "AppLdrLogger.hpp"
-#include "app_data_generated.h"
+#include "AppLdrClient.hpp"
 
 namespace
 {
@@ -16,6 +16,7 @@ namespace
 
     app::AppButton m_btn;
     app::AppLdrLogger m_logger;
+    app::AppLdrClient m_client;
 
     void loggerTask(void *param)
     {
@@ -37,13 +38,7 @@ extern "C" void app_main(void)
     auto deserialize = [](void *)
     {
         ESP_LOGI(TAG, "deserializing..");
-        app::LightSensorFbT light_sensor;
-        app::GetLightSensorFb(m_buffer)->UnPackTo(&light_sensor);
-        ESP_LOGI(TAG, "location: %s", light_sensor.location.c_str());
-        for (auto &&rec : light_sensor.readings)
-        {
-            ESP_LOGI(TAG, "ts: %u, light: %d", rec->timestamp, rec->light);
-        }
+        m_client.consume(m_buffer);
     };
 
     m_btn.init(serialize, deserialize);

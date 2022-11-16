@@ -20,7 +20,7 @@ namespace app
     class AppLdrLogger
     {
     private:
-        ReadingsFbT m_light_sensor;
+        LightSensorFbT m_light_sensor;
         const adc1_channel_t m_adc_ch = ADC1_CHANNEL_8;
 
     public:
@@ -53,7 +53,7 @@ namespace app
         size_t serialize(uint8_t *buffer)
         {
             flatbuffers::FlatBufferBuilder fbb;
-            fbb.Finish(ReadingsFb::Pack(fbb, &m_light_sensor));
+            fbb.Finish(LightSensorFb::Pack(fbb, &m_light_sensor));
             memcpy(buffer, fbb.GetBufferPointer(), fbb.GetSize());
             size_t len = fbb.GetSize();
             m_light_sensor.readings.clear();

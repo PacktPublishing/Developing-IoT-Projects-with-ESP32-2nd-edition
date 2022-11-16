@@ -5,9 +5,9 @@ table ReadingFb {
     light:ushort;
 }
 
-table ReadingsFb {
+table LightSensorFb {
 	location:string;
 	readings:[ReadingFb];
 }
 
-root_type ReadingsFb;
+root_type LightSensorFb;

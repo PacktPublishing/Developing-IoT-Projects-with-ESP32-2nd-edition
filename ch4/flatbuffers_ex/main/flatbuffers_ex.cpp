@@ -36,8 +36,8 @@ extern "C" void app_main(void)
     auto deserialize = [](void *)
     {
         ESP_LOGI(__func__, "deserializing..");
-        app::ReadingsFbT light_sensor;
-        app::GetReadingsFb(m_buffer)->UnPackTo(&light_sensor);
+        app::LightSensorFbT light_sensor;
+        app::GetLightSensorFb(m_buffer)->UnPackTo(&light_sensor);
         ESP_LOGI(__func__, "location: %s", light_sensor.location.c_str());
         for (auto&& rec : light_sensor.readings)
         {

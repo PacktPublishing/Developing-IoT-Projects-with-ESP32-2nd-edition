@@ -23,10 +23,6 @@ struct LightSensorFb;
 struct LightSensorFbBuilder;
 struct LightSensorFbT;
 
-inline const flatbuffers::TypeTable *ReadingFbTypeTable();
-
-inline const flatbuffers::TypeTable *LightSensorFbTypeTable();
-
 struct ReadingFbT : public flatbuffers::NativeTable {
   typedef ReadingFb TableType;
   uint32_t timestamp = 0;
@@ -36,9 +32,6 @@ struct ReadingFbT : public flatbuffers::NativeTable {
 struct ReadingFb FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef ReadingFbT NativeTableType;
   typedef ReadingFbBuilder Builder;
-  static const flatbuffers::TypeTable *MiniReflectTypeTable() {
-    return ReadingFbTypeTable();
-  }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_TIMESTAMP = 4,
     VT_LIGHT = 6
@@ -106,9 +99,6 @@ struct LightSensorFbT : public flatbuffers::NativeTable {
 struct LightSensorFb FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef LightSensorFbT NativeTableType;
   typedef LightSensorFbBuilder Builder;
-  static const flatbuffers::TypeTable *MiniReflectTypeTable() {
-    return LightSensorFbTypeTable();
-  }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_LOCATION = 4,
     VT_READINGS = 6
@@ -246,39 +236,6 @@ inline flatbuffers::Offset<LightSensorFb> CreateLightSensorFb(flatbuffers::FlatB
       _fbb,
       _location,
       _readings);
-}
-
-inline const flatbuffers::TypeTable *ReadingFbTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_UINT, 0, -1 },
-    { flatbuffers::ET_USHORT, 0, -1 }
-  };
-  static const char * const names[] = {
-    "timestamp",
-    "light"
-  };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_TABLE, 2, type_codes, nullptr, nullptr, nullptr, names
-  };
-  return &tt;
-}
-
-inline const flatbuffers::TypeTable *LightSensorFbTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_STRING, 0, -1 },
-    { flatbuffers::ET_SEQUENCE, 1, 0 }
-  };
-  static const flatbuffers::TypeFunction type_refs[] = {
-    app::ReadingFbTypeTable
-  };
-  static const char * const names[] = {
-    "location",
-    "readings"
-  };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_TABLE, 2, type_codes, type_refs, nullptr, nullptr, names
-  };
-  return &tt;
 }
 
 inline const app::LightSensorFb *GetLightSensorFb(const void *buf) {

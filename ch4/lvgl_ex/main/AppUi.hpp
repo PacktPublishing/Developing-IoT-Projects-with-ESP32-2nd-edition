@@ -17,8 +17,6 @@ namespace app
     class AppUi
     {
     private:
-        constexpr static const char *TAG{"gui"};
-
         static std::mutex m_ui_access;
         static void lvglTask(void *param)
         {

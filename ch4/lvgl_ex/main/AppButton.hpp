@@ -54,9 +54,9 @@ namespace app
 namespace
 {
     template <board_btn_id_t I, button_event_t E>
-    void button_event_handler(void *param)
+    void button_event_handler(void *btn_ptr)
     {
-        app::AppButton &app_btn = app::AppButton::getObject(param);
+        app::AppButton &app_btn = app::AppButton::getObject(btn_ptr);
         app::sAppButtonEvent e{I, E};
         app_btn.runCallback(e);
     }

@@ -1,0 +1,10 @@
+build/
+sdkconfig
+sdkconfig.old
+
+example/build/
+example/sdkconfig
+example/sdkconfig.old
+example/dependencies.lock
+
+*.DS_Store

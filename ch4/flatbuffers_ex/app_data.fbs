@@ -1,0 +1,13 @@
+namespace app;
+
+table ReadingFb {
+    timestamp:uint;
+    light:ushort;
+}
+
+table LightSensorFb {
+	location:string;
+	readings:[ReadingFb];
+}
+
+root_type LightSensorFb;

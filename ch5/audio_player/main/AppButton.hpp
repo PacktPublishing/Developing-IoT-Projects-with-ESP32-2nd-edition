@@ -1,43 +1,50 @@
 #pragma once
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+
 #include "bsp_board.h"
 #include "bsp_btn.h"
 
 #include "esp_log.h"
 
+namespace app
+{
+    enum class eBtnEvent
+    {
+        L_CLICK,
+        M_CLICK,
+        M_DCLICK,
+        R_CLICK
+    };
+}
+
 namespace
 {
-    template <board_btn_id_t I, button_event_t E>
+    template <app::eBtnEvent>
     void button_event_handler(void *param);
 }
 
 namespace app
 {
-    struct sAppButtonEvent
-    {
-        board_btn_id_t btn_id;
-        button_event_t evt_id;
-    };
-
-    using fAppButtonCallback = void (*)(sAppButtonEvent &);
-
     class AppButton
     {
     private:
-        fAppButtonCallback m_btn_cb;
+        QueueHandle_t m_event_queue = NULL;
 
     public:
-        void init(fAppButtonCallback cb)
+        void init(void)
         {
-            m_btn_cb = cb;
+            m_event_queue = xQueueCreate(10, sizeof(app::eBtnEvent));
+
             bsp_btn_register_callback(BOARD_BTN_ID_PREV, BUTTON_SINGLE_CLICK,
-                                      button_event_handler<BOARD_BTN_ID_PREV, BUTTON_SINGLE_CLICK>, this);
+                                      button_event_handler<app::eBtnEvent::L_CLICK>, this);
             bsp_btn_register_callback(BOARD_BTN_ID_NEXT, BUTTON_SINGLE_CLICK,
-                                      button_event_handler<BOARD_BTN_ID_NEXT, BUTTON_SINGLE_CLICK>, this);
+                                      button_event_handler<app::eBtnEvent::R_CLICK>, this);
             bsp_btn_register_callback(BOARD_BTN_ID_ENTER, BUTTON_SINGLE_CLICK,
-                                      button_event_handler<BOARD_BTN_ID_ENTER, BUTTON_SINGLE_CLICK>, this);
+                                      button_event_handler<app::eBtnEvent::M_CLICK>, this);
             bsp_btn_register_callback(BOARD_BTN_ID_ENTER, BUTTON_PRESS_REPEAT,
-                                      button_event_handler<BOARD_BTN_ID_ENTER, BUTTON_PRESS_REPEAT>, this);
+                                      button_event_handler<app::eBtnEvent::M_DCLICK>, this);
         }
 
         static AppButton &getObject(void *btn_ptr)
@@ -46,22 +53,17 @@ namespace app
             return *(reinterpret_cast<app::AppButton *>(btn_dev->cb_user_data));
         }
 
-        void runCallback(sAppButtonEvent &e)
-        {
-            m_btn_cb(e);
-        }
+        QueueHandle_t getEventQueue(void) const { return m_event_queue; }
     };
 }
 
 namespace
 {
-    template <board_btn_id_t I, button_event_t E>
+    template <app::eBtnEvent E>
     void button_event_handler(void *btn_ptr)
     {
         app::AppButton &app_btn = app::AppButton::getObject(btn_ptr);
-        app::sAppButtonEvent e{I, E};
-        app_btn.runCallback(e);
-
-        ESP_LOGI("btn", "%d %d", (int)I, (int)E);
+        app::eBtnEvent evt{E};
+        xQueueSend(app_btn.getEventQueue(), (void *)(&evt), 0);
     }
 }

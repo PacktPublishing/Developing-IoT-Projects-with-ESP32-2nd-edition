@@ -2,7 +2,6 @@
 
 #include <mutex>
 #include <vector>
-#include <cstdio>
 
 #include "bsp_lcd.h"
 #include "esp_log.h"
@@ -11,8 +10,9 @@
 #include "lvgl/lvgl.h"
 #include "lv_port/lv_port.h"
 #include "ui.h"
-#include "AppButton.hpp"
 
+#include "AppButton.hpp"
+#include "AppNav.hpp"
 
 namespace app
 {
@@ -32,86 +32,90 @@ namespace app
             }
         }
 
-        enum class eActivePanel
+        static void btnTask(void *param)
         {
-            VolumeControl,
-            Playlist
-        };
+            AppUi &ui = *(reinterpret_cast<AppUi *>(param));
+            app::eBtnEvent evt;
 
-        eActivePanel m_active_panel;
+            while (true)
+            {
+                xQueueReceive(ui.getEventQueue(), &evt, portMAX_DELAY);
+                ui.handleButtonEvent(evt);
+            }
+        }
 
-        int m_player_index;
-        lv_fs_drv_t m_drv;
+        bool m_playlist_active;
+        QueueHandle_t m_evt_queue;
+        AppNav m_nav;
 
     public:
-
-        void init(void)
+        void init(QueueHandle_t evt_queue)
         {
-            m_active_panel = eActivePanel::Playlist;
+            m_evt_queue = evt_queue;
 
             lv_port_init();
             ui_init();
+            m_nav.init();
 
+            m_playlist_active = true;
             lv_event_send(ui_btnPlay, LV_EVENT_FOCUSED, nullptr);
             lv_img_set_src(ui_imgAnimal, "S:/spiffs/dog.png");
-            
+            bsp_lcd_set_backlight(true);
 
             xTaskCreatePinnedToCore(lvglTask, "lvgl", 6 * 1024, nullptr, 3, nullptr, 0);
-
-            bsp_lcd_set_backlight(true);
+            xTaskCreate(btnTask, "btn", 2 * 1024, this, 3, nullptr);
         }
 
-        void buttonEventHandler(sAppButtonEvent &btn_evt)
+        QueueHandle_t getEventQueue(void) const { return m_evt_queue; }
+
+        void handleButtonEvent(app::eBtnEvent &btn_evt)
         {
             std::lock_guard<std::mutex> lock(m_ui_access);
-            switch (btn_evt.btn_id)
+            switch (btn_evt)
             {
-            case board_btn_id_t::BOARD_BTN_ID_PREV:
-                if (m_active_panel == eActivePanel::Playlist)
+            case app::eBtnEvent::M_DCLICK:
+                m_playlist_active = !m_playlist_active;
+                if (m_playlist_active)
                 {
+                    lv_event_send(ui_btnPlay, LV_EVENT_FOCUSED, nullptr);
+                }
+                else
+                {
+                    lv_event_send(ui_barVolume, LV_EVENT_FOCUSED, nullptr);
+                }
+                break;
+            case app::eBtnEvent::M_CLICK:
+                if (m_playlist_active)
+                {
+                    Animal_t &an = m_nav.getCurrent();
+                    ESP_LOGI("ui", "%s", an.animal.c_str());
+                    lv_label_set_text(ui_txtFilename, an.animal.c_str());
                 }
                 else
                 {
                 }
                 break;
 
-            case board_btn_id_t::BOARD_BTN_ID_NEXT:
-                if (m_active_panel == eActivePanel::Playlist)
+            case app::eBtnEvent::L_CLICK:
+                if (m_playlist_active)
                 {
+                    Animal_t &an = m_nav.prev();
+                    ESP_LOGI("ui", "%s", an.animal.c_str());
+                    lv_label_set_text(ui_txtFilename, an.animal.c_str());
                 }
                 else
                 {
                 }
                 break;
-
-            case board_btn_id_t::BOARD_BTN_ID_ENTER:
-                if (m_active_panel == eActivePanel::Playlist)
+            case app::eBtnEvent::R_CLICK:
+                if (m_playlist_active)
                 {
-                    if (btn_evt.evt_id == button_event_t::BUTTON_PRESS_REPEAT)
-                    {
-                        m_active_panel = eActivePanel::VolumeControl;
-                        lv_event_send(ui_barVolume, LV_EVENT_FOCUSED, nullptr);
-                        // lv_obj_clear_state(ui_btnPlay, LV_STATE_FOCUSED);
-                        // lv_obj_add_state(ui_barVolume, LV_STATE_FOCUSED);
-                        ESP_LOGI("ui", "settin focus on bar");
-                    }
-                    else
-                    {
-                    }
+                    Animal_t &an = m_nav.next();
+                    ESP_LOGI("ui", "%s", an.animal.c_str());
+                    lv_label_set_text(ui_txtFilename, an.animal.c_str());
                 }
                 else
                 {
-                    if (btn_evt.evt_id == button_event_t::BUTTON_PRESS_REPEAT)
-                    {
-                        m_active_panel = eActivePanel::Playlist;
-                        lv_event_send(ui_btnPlay, LV_EVENT_FOCUSED, nullptr);
-                        // lv_obj_clear_state(ui_barVolume, LV_STATE_FOCUSED);
-                        // lv_obj_add_state(ui_btnPlay, LV_STATE_FOCUSED);
-                        ESP_LOGI("ui", "settin focus on btn");
-                    }
-                    else
-                    {
-                    }
                 }
                 break;
 
@@ -119,18 +123,6 @@ namespace app
                 break;
             }
         }
-
-        // void updateLvButtonState(button_event_t btn_evt_id)
-        // {
-        //     if (btn_evt_id == button_event_t::BUTTON_PRESS_DOWN)
-        //     {
-        //         lv_event_send(ui_Screen2_Button1, LV_EVENT_PRESSED, nullptr);
-        //     }
-        //     else
-        //     {
-        //         lv_event_send(ui_Screen2_Button1, LV_EVENT_RELEASED, nullptr);
-        //     }
-        // }
     };
 
     std::mutex AppUi::m_ui_access;

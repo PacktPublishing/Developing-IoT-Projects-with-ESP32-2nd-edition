@@ -1,26 +1,22 @@
 [
     {
-        "Dog": {
-            "audio": "dog.mp3",
-            "image": "dog.png"
-        }
+        "animal": "Dog",
+        "audio": "dog.mp3",
+        "image": "dog.png"
     },
     {
-        "Donkey": {
-            "audio": "donkey.mp3",
-            "image": "donkey.png"
-        }
+        "animal": "Donkey",
+        "audio": "donkey.mp3",
+        "image": "donkey.png"
     },
     {
-        "Goose": {
-            "audio": "goose.mp3",
-            "image": "goose.png"
-        }
+        "animal": "Goose",
+        "audio": "goose.mp3",
+        "image": "goose.png"
     },
     {
-        "Sheep": {
-            "audio": "sheep.mp3",
-            "image": "sheep.png"
-        }
+        "animal": "Sheep",
+        "audio": "sheep.mp3",
+        "image": "sheep.png"
     }
 ]

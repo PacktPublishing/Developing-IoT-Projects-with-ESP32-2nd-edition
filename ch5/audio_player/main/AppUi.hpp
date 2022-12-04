@@ -134,6 +134,7 @@ namespace app
             case app::eBtnEvent::M_CLICK:
                 if (m_playlist_active)
                 {
+                    lv_event_send(ui_btnPlay, LV_EVENT_CLICKED, nullptr);
                     m_app_audio->togglePlay(makeAudioPath(m_nav.getCurrent().audio));
                 }
                 else
@@ -142,23 +143,47 @@ namespace app
                 }
                 break;
 
-            case app::eBtnEvent::L_CLICK:
+            case app::eBtnEvent::L_PRESSED:
                 if (m_playlist_active)
                 {
+                    lv_event_send(ui_btnPrev, LV_EVENT_PRESSED, nullptr);
+                }
+                else
+                {
+                    lv_event_send(ui_btnVolumeDown, LV_EVENT_PRESSED, nullptr);
+                }
+                break;
+            case app::eBtnEvent::L_RELEASED:
+                if (m_playlist_active)
+                {
+                    lv_event_send(ui_btnPrev, LV_EVENT_RELEASED, nullptr);
                     update(m_nav.prev());
                 }
                 else
                 {
+                    lv_event_send(ui_btnVolumeDown, LV_EVENT_RELEASED, nullptr);
                     lv_bar_set_value(ui_barVolume, m_app_audio->volumeDown(), lv_anim_enable_t::LV_ANIM_OFF);
                 }
                 break;
-            case app::eBtnEvent::R_CLICK:
+            case app::eBtnEvent::R_PRESSED:
                 if (m_playlist_active)
                 {
+                    lv_event_send(ui_btnNext, LV_EVENT_PRESSED, nullptr);
+                }
+                else
+                {
+                    lv_event_send(ui_btnVolumeUp, LV_EVENT_PRESSED, nullptr);
+                }
+                break;
+            case app::eBtnEvent::R_RELEASED:
+                if (m_playlist_active)
+                {
+                    lv_event_send(ui_btnNext, LV_EVENT_RELEASED, nullptr);
                     update(m_nav.next());
                 }
                 else
                 {
+                    lv_event_send(ui_btnVolumeUp, LV_EVENT_RELEASED, nullptr);
                     lv_bar_set_value(ui_barVolume, m_app_audio->volumeUp(), lv_anim_enable_t::LV_ANIM_OFF);
                 }
                 break;

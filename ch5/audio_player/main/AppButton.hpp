@@ -12,10 +12,12 @@ namespace app
 {
     enum class eBtnEvent
     {
-        L_CLICK,
+        L_PRESSED,
+        L_RELEASED,
         M_CLICK,
         M_DCLICK,
-        R_CLICK
+        R_PRESSED,
+        R_RELEASED
     };
 }
 
@@ -37,10 +39,14 @@ namespace app
         {
             m_event_queue = xQueueCreate(10, sizeof(app::eBtnEvent));
 
-            bsp_btn_register_callback(BOARD_BTN_ID_PREV, BUTTON_SINGLE_CLICK,
-                                      button_event_handler<app::eBtnEvent::L_CLICK>, this);
-            bsp_btn_register_callback(BOARD_BTN_ID_NEXT, BUTTON_SINGLE_CLICK,
-                                      button_event_handler<app::eBtnEvent::R_CLICK>, this);
+            bsp_btn_register_callback(BOARD_BTN_ID_PREV, BUTTON_PRESS_DOWN,
+                                      button_event_handler<app::eBtnEvent::L_PRESSED>, this);
+            bsp_btn_register_callback(BOARD_BTN_ID_PREV, BUTTON_PRESS_UP,
+                                      button_event_handler<app::eBtnEvent::L_RELEASED>, this);
+            bsp_btn_register_callback(BOARD_BTN_ID_NEXT, BUTTON_PRESS_DOWN,
+                                      button_event_handler<app::eBtnEvent::R_PRESSED>, this);
+            bsp_btn_register_callback(BOARD_BTN_ID_NEXT, BUTTON_PRESS_UP,
+                                      button_event_handler<app::eBtnEvent::R_RELEASED>, this);
             bsp_btn_register_callback(BOARD_BTN_ID_ENTER, BUTTON_SINGLE_CLICK,
                                       button_event_handler<app::eBtnEvent::M_CLICK>, this);
             bsp_btn_register_callback(BOARD_BTN_ID_ENTER, BUTTON_PRESS_REPEAT,

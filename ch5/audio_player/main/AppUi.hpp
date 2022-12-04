@@ -1,7 +1,7 @@
 #pragma once
 
 #include <mutex>
-#include <vector>
+#include <string>
 
 #include "bsp_lcd.h"
 #include "esp_log.h"
@@ -13,6 +13,13 @@
 
 #include "AppButton.hpp"
 #include "AppNav.hpp"
+#include "AppAudio.hpp"
+
+namespace
+{
+    app::AppNav m_nav;
+
+}
 
 namespace app
 {
@@ -32,26 +39,69 @@ namespace app
             }
         }
 
-        static void btnTask(void *param)
+        static void buttonEventTask(void *param)
         {
             AppUi &ui = *(reinterpret_cast<AppUi *>(param));
             app::eBtnEvent evt;
 
             while (true)
             {
-                xQueueReceive(ui.getEventQueue(), &evt, portMAX_DELAY);
+                xQueueReceive(ui.getButtonEventQueue(), &evt, portMAX_DELAY);
                 ui.handleButtonEvent(evt);
+            }
+        }
+
+        static void audioEventTask(void *param)
+        {
+            AppUi &ui = *(reinterpret_cast<AppUi *>(param));
+            app::eAudioEvent evt;
+
+            while (true)
+            {
+                xQueueReceive(ui.getAudioEventQueue(), &evt, portMAX_DELAY);
+                ui.handleAudioEvent(evt);
+            }
+        }
+
+        static std::string makeImagePath(const std::string &filename)
+        {
+            return std::string("S:/spiffs/") + filename;
+        }
+
+        static std::string makeAudioPath(const std::string &filename)
+        {
+            return std::string("/spiffs/") + filename;
+        }
+
+        void update(const Animal_t &an, bool play = true)
+        {
+            ESP_LOGI("ui", "%s", an.animal.c_str());
+            lv_label_set_text(ui_txtFilename, an.animal.c_str());
+            lv_img_set_src(ui_imgAnimal, makeImagePath(an.image).c_str());
+        }
+
+        void toggleControl(void)
+        {
+            m_playlist_active = !m_playlist_active;
+            if (m_playlist_active)
+            {
+                lv_event_send(ui_btnPlay, LV_EVENT_FOCUSED, nullptr);
+            }
+            else
+            {
+                lv_event_send(ui_barVolume, LV_EVENT_FOCUSED, nullptr);
             }
         }
 
         bool m_playlist_active;
         QueueHandle_t m_evt_queue;
-        AppNav m_nav;
+        app::AppAudio *m_app_audio;
 
     public:
-        void init(QueueHandle_t evt_queue)
+        void init(QueueHandle_t evt_queue, app::AppAudio *audio)
         {
             m_evt_queue = evt_queue;
+            m_app_audio = audio;
 
             lv_port_init();
             ui_init();
@@ -59,14 +109,17 @@ namespace app
 
             m_playlist_active = true;
             lv_event_send(ui_btnPlay, LV_EVENT_FOCUSED, nullptr);
-            lv_img_set_src(ui_imgAnimal, "S:/spiffs/dog.png");
+            update(m_nav.getCurrent(), false);
+
             bsp_lcd_set_backlight(true);
 
             xTaskCreatePinnedToCore(lvglTask, "lvgl", 6 * 1024, nullptr, 3, nullptr, 0);
-            xTaskCreate(btnTask, "btn", 2 * 1024, this, 3, nullptr);
+            xTaskCreate(buttonEventTask, "btn_evt", 3 * 1024, this, 3, nullptr);
+            xTaskCreate(audioEventTask, "audio_evt", 3 * 1024, this, 3, nullptr);
         }
 
-        QueueHandle_t getEventQueue(void) const { return m_evt_queue; }
+        QueueHandle_t getButtonEventQueue(void) const { return m_evt_queue; }
+        QueueHandle_t getAudioEventQueue(void) const { return m_app_audio->getEventQueue(); }
 
         void handleButtonEvent(app::eBtnEvent &btn_evt)
         {
@@ -74,22 +127,12 @@ namespace app
             switch (btn_evt)
             {
             case app::eBtnEvent::M_DCLICK:
-                m_playlist_active = !m_playlist_active;
-                if (m_playlist_active)
-                {
-                    lv_event_send(ui_btnPlay, LV_EVENT_FOCUSED, nullptr);
-                }
-                else
-                {
-                    lv_event_send(ui_barVolume, LV_EVENT_FOCUSED, nullptr);
-                }
+                toggleControl();
                 break;
             case app::eBtnEvent::M_CLICK:
                 if (m_playlist_active)
                 {
-                    Animal_t &an = m_nav.getCurrent();
-                    ESP_LOGI("ui", "%s", an.animal.c_str());
-                    lv_label_set_text(ui_txtFilename, an.animal.c_str());
+                    m_app_audio->togglePlay(makeAudioPath(m_nav.getCurrent().audio));
                 }
                 else
                 {
@@ -99,9 +142,7 @@ namespace app
             case app::eBtnEvent::L_CLICK:
                 if (m_playlist_active)
                 {
-                    Animal_t &an = m_nav.prev();
-                    ESP_LOGI("ui", "%s", an.animal.c_str());
-                    lv_label_set_text(ui_txtFilename, an.animal.c_str());
+                    update(m_nav.prev());
                 }
                 else
                 {
@@ -110,9 +151,7 @@ namespace app
             case app::eBtnEvent::R_CLICK:
                 if (m_playlist_active)
                 {
-                    Animal_t &an = m_nav.next();
-                    ESP_LOGI("ui", "%s", an.animal.c_str());
-                    lv_label_set_text(ui_txtFilename, an.animal.c_str());
+                    update(m_nav.next());
                 }
                 else
                 {
@@ -121,6 +160,18 @@ namespace app
 
             default:
                 break;
+            }
+        }
+
+        void handleAudioEvent(app::eAudioEvent &evt)
+        {
+            if (evt == app::eAudioEvent::PLAYING)
+            {
+                lv_label_set_text(ui_txtPlayButton, "Pause");
+            }
+            else
+            {
+                lv_label_set_text(ui_txtPlayButton, "Play");
             }
         }
     };

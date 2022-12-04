@@ -7,8 +7,15 @@
 
 namespace
 {
-    app::AppUi m_app_ui;
     app::AppButton m_app_btn;
+    app::AppAudio m_app_audio;
+    app::AppUi m_app_ui;
+
+    esp_err_t audio_mute_function(AUDIO_PLAYER_MUTE_SETTING setting)
+    {
+        m_app_audio.mute(setting == AUDIO_PLAYER_MUTE);
+        return ESP_OK;
+    }
 }
 
 extern "C" void app_main(void)
@@ -18,5 +25,6 @@ extern "C" void app_main(void)
     bsp_spiffs_init("storage", "/spiffs", 10);
 
     m_app_btn.init();
-    m_app_ui.init(m_app_btn.getEventQueue());
+    m_app_audio.init(audio_mute_function);
+    m_app_ui.init(m_app_btn.getEventQueue(), &m_app_audio);
 }

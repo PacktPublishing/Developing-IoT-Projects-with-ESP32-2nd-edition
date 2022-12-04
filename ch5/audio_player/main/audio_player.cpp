@@ -1,9 +1,6 @@
 #include "bsp_board.h"
 #include "bsp_storage.h"
-
 #include "AppUi.hpp"
-
-#include <cstdio>
 
 namespace
 {

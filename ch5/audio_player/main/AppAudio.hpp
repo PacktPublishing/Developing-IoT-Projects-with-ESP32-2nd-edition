@@ -15,7 +15,6 @@
 
 namespace
 {
-
     void audio_player_callback(audio_player_cb_ctx_t *obj);
 }
 
@@ -84,15 +83,12 @@ namespace app
             switch (m_player_state)
             {
             case AUDIO_PLAYER_STATE_PLAYING:
-                ESP_LOGI(__func__, "%d - pausing", m_player_state);
                 audio_player_pause();
                 break;
             case AUDIO_PLAYER_STATE_PAUSE:
-                ESP_LOGI(__func__, "%d - resuming", m_player_state);
                 audio_player_resume();
                 break;
             default:
-                ESP_LOGI(__func__, "%d - playing", m_player_state);
                 m_fp = fopen(filename.c_str(), "rb");
                 audio_player_play(m_fp);
                 break;
@@ -121,7 +117,6 @@ namespace app
 
         void setState(audio_player_state_t state)
         {
-            ESP_LOGI(__func__, "%d -> %d", m_player_state, state);
             m_player_state = state;
         }
     };
@@ -133,7 +128,6 @@ namespace
     {
         app::AppAudio &app_audio = *(reinterpret_cast<app::AppAudio *>(param->user_ctx));
         audio_player_state_t state = audio_player_get_state();
-        ESP_LOGI(__func__, "%d %d", param->audio_event, state);
         app_audio.setState(state);
         app::eAudioEvent evt = state == AUDIO_PLAYER_STATE_PLAYING ? app::eAudioEvent::PLAYING : app::eAudioEvent::STOPPED;
         xQueueSend(app_audio.getEventQueue(), (void *)(&evt), 0);

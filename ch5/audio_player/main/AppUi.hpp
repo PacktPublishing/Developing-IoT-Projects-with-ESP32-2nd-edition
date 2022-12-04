@@ -74,7 +74,7 @@ namespace app
 
         void update(const Animal_t &an, bool play = true)
         {
-            lv_label_set_text(ui_txtFilename, an.animal.c_str());
+            lv_label_set_text(ui_txtAnimal, an.animal.c_str());
             lv_img_set_src(ui_imgAnimal, makeImagePath(an.image).c_str());
         }
 

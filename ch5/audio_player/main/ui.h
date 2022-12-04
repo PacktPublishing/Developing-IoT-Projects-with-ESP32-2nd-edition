@@ -18,7 +18,7 @@ extern lv_obj_t * ui_btnPlay;
 extern lv_obj_t * ui_txtPlayButton;
 void ui_event_barVolume(lv_event_t * e);
 extern lv_obj_t * ui_barVolume;
-extern lv_obj_t * ui_txtFilename;
+extern lv_obj_t * ui_txtAnimal;
 void ui_event_btnVolumeDown(lv_event_t * e);
 extern lv_obj_t * ui_btnVolumeDown;
 void ui_event_btnVolumeUp(lv_event_t * e);

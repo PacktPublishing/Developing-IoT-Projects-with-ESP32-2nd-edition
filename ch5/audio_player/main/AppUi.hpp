@@ -18,7 +18,6 @@
 namespace
 {
     app::AppNav m_nav;
-
 }
 
 namespace app
@@ -94,13 +93,13 @@ namespace app
         }
 
         bool m_playlist_active;
-        QueueHandle_t m_evt_queue;
         app::AppAudio *m_app_audio;
+        app::AppButton *m_app_button;
 
     public:
-        void init(QueueHandle_t evt_queue, app::AppAudio *audio)
+        void init(app::AppButton *button, app::AppAudio *audio)
         {
-            m_evt_queue = evt_queue;
+            m_app_button = button;
             m_app_audio = audio;
 
             lv_port_init();
@@ -109,6 +108,9 @@ namespace app
 
             m_playlist_active = true;
             lv_event_send(ui_btnPlay, LV_EVENT_FOCUSED, nullptr);
+            lv_bar_set_range(ui_barVolume, 0, 100);
+            lv_bar_set_value(ui_barVolume, 50, lv_anim_enable_t::LV_ANIM_OFF);
+
             update(m_nav.getCurrent(), false);
 
             bsp_lcd_set_backlight(true);
@@ -118,7 +120,7 @@ namespace app
             xTaskCreate(audioEventTask, "audio_evt", 3 * 1024, this, 3, nullptr);
         }
 
-        QueueHandle_t getButtonEventQueue(void) const { return m_evt_queue; }
+        QueueHandle_t getButtonEventQueue(void) const { return m_app_button->getEventQueue(); }
         QueueHandle_t getAudioEventQueue(void) const { return m_app_audio->getEventQueue(); }
 
         void handleButtonEvent(app::eBtnEvent &btn_evt)
@@ -136,6 +138,7 @@ namespace app
                 }
                 else
                 {
+                    lv_bar_set_value(ui_barVolume, m_app_audio->mute(false, true), lv_anim_enable_t::LV_ANIM_OFF);
                 }
                 break;
 
@@ -146,6 +149,7 @@ namespace app
                 }
                 else
                 {
+                    lv_bar_set_value(ui_barVolume, m_app_audio->volumeDown(), lv_anim_enable_t::LV_ANIM_OFF);
                 }
                 break;
             case app::eBtnEvent::R_CLICK:
@@ -155,6 +159,7 @@ namespace app
                 }
                 else
                 {
+                    lv_bar_set_value(ui_barVolume, m_app_audio->volumeUp(), lv_anim_enable_t::LV_ANIM_OFF);
                 }
                 break;
 

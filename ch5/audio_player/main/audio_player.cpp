@@ -26,5 +26,5 @@ extern "C" void app_main(void)
 
     m_app_btn.init();
     m_app_audio.init(audio_mute_function);
-    m_app_ui.init(m_app_btn.getEventQueue(), &m_app_audio);
+    m_app_ui.init(&m_app_btn, &m_app_audio);
 }

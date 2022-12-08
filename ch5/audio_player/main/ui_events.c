@@ -6,9 +6,6 @@
 #include "ui.h"
 #include "esp_log.h"
 
-#define NORMAL_COLOR 0x4C93F4
-#define FOCUSED_COLOR 0xFF0000
-
 void play_clicked(lv_event_t * e)
 {
 	// Your code here
@@ -33,6 +30,9 @@ void next_clicked(lv_event_t * e)
 {
 	// Your code here
 }
+
+#define NORMAL_COLOR 0x4C93F4
+#define FOCUSED_COLOR 0xFF0000
 
 void play_focused(lv_event_t * e)
 {

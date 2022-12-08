@@ -38,62 +38,16 @@ namespace app
             }
         }
 
-        static void buttonEventTask(void *param)
-        {
-            AppUi &ui = *(reinterpret_cast<AppUi *>(param));
-            app::eBtnEvent evt;
-
-            while (true)
-            {
-                xQueueReceive(ui.getButtonEventQueue(), &evt, portMAX_DELAY);
-                ui.handleButtonEvent(evt);
-            }
-        }
-
-        static void audioEventTask(void *param)
-        {
-            AppUi &ui = *(reinterpret_cast<AppUi *>(param));
-            app::eAudioEvent evt;
-
-            while (true)
-            {
-                xQueueReceive(ui.getAudioEventQueue(), &evt, portMAX_DELAY);
-                ui.handleAudioEvent(evt);
-            }
-        }
-
-        static std::string makeImagePath(const std::string &filename)
-        {
-            return std::string("S:/spiffs/") + filename;
-        }
-
-        static std::string makeAudioPath(const std::string &filename)
-        {
-            return std::string("/spiffs/") + filename;
-        }
-
-        void update(const Animal_t &an, bool play = true)
-        {
-            lv_label_set_text(ui_txtAnimal, an.animal.c_str());
-            lv_img_set_src(ui_imgAnimal, makeImagePath(an.image).c_str());
-        }
-
-        void toggleControl(void)
-        {
-            m_playlist_active = !m_playlist_active;
-            if (m_playlist_active)
-            {
-                lv_event_send(ui_btnPlay, LV_EVENT_FOCUSED, nullptr);
-            }
-            else
-            {
-                lv_event_send(ui_barVolume, LV_EVENT_FOCUSED, nullptr);
-            }
-        }
-
         bool m_playlist_active;
         app::AppAudio *m_app_audio;
         app::AppButton *m_app_button;
+
+        static void buttonEventTask(void *param);
+        static void audioEventTask(void *param);
+        static std::string makeImagePath(const std::string &filename);
+        static std::string makeAudioPath(const std::string &filename);
+        void update(const Animal_t &an, bool play = true);
+        void toggleControl(void);
 
     public:
         void init(app::AppButton *button, app::AppAudio *audio)
@@ -204,6 +158,59 @@ namespace app
             }
         }
     };
+
+    void AppUi::buttonEventTask(void *param)
+    {
+        AppUi &ui = *(reinterpret_cast<AppUi *>(param));
+        app::eBtnEvent evt;
+
+        while (true)
+        {
+            xQueueReceive(ui.getButtonEventQueue(), &evt, portMAX_DELAY);
+            ui.handleButtonEvent(evt);
+        }
+    }
+
+    void AppUi::audioEventTask(void *param)
+    {
+        AppUi &ui = *(reinterpret_cast<AppUi *>(param));
+        app::eAudioEvent evt;
+
+        while (true)
+        {
+            xQueueReceive(ui.getAudioEventQueue(), &evt, portMAX_DELAY);
+            ui.handleAudioEvent(evt);
+        }
+    }
+
+    std::string AppUi::makeImagePath(const std::string &filename)
+    {
+        return std::string("S:/spiffs/") + filename;
+    }
+
+    std::string AppUi::makeAudioPath(const std::string &filename)
+    {
+        return std::string("/spiffs/") + filename;
+    }
+
+    void AppUi::update(const Animal_t &an, bool play)
+    {
+        lv_label_set_text(ui_txtAnimal, an.animal.c_str());
+        lv_img_set_src(ui_imgAnimal, makeImagePath(an.image).c_str());
+    }
+
+    void AppUi::toggleControl(void)
+    {
+        m_playlist_active = !m_playlist_active;
+        if (m_playlist_active)
+        {
+            lv_event_send(ui_btnPlay, LV_EVENT_FOCUSED, nullptr);
+        }
+        else
+        {
+            lv_event_send(ui_barVolume, LV_EVENT_FOCUSED, nullptr);
+        }
+    }
 
     std::mutex AppUi::m_ui_access;
 }

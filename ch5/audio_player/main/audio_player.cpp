@@ -1,6 +1,9 @@
 #include "bsp_board.h"
 #include "bsp_storage.h"
+
 #include "AppUi.hpp"
+#include "AppButton.hpp"
+#include "AppAudio.hpp"
 
 namespace
 {

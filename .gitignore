@@ -4,3 +4,7 @@ tmp/
 *.old
 build*/
 dependencies.lock
+<<<<<<< HEAD
+=======
+backup/
+>>>>>>> dev

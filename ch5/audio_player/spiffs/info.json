@@ -1,0 +1,22 @@
+[
+    {
+        "animal": "Dog",
+        "audio": "dog.mp3",
+        "image": "dog.png"
+    },
+    {
+        "animal": "Donkey",
+        "audio": "donkey.mp3",
+        "image": "donkey.png"
+    },
+    {
+        "animal": "Goose",
+        "audio": "goose.mp3",
+        "image": "goose.png"
+    },
+    {
+        "animal": "Sheep",
+        "audio": "sheep.mp3",
+        "image": "sheep.png"
+    }
+]

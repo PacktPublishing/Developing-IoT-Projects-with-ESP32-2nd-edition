@@ -1,0 +1,5 @@
+sudo ufw allow 5000
+
+export FLASK_APP=./rest_server.py
+flask run
+flask run -h 0.0.0.0

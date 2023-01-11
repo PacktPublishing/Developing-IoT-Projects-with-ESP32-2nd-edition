@@ -1,0 +1,17 @@
+menu "Application settings"
+    choice PROV_METHOD
+        prompt "Provisioning method"
+        default PROV_METHOD_SOFTAP
+        help
+            Provisioning method to add a WiFi network
+        config PROV_METHOD_SOFTAP
+            bool "softap"
+        config PROV_METHOD_BLE
+            bool "ble"
+    endchoice
+    
+    config PROV_METHOD
+        int
+        default 1 if PROV_METHOD_BLE
+        default 0
+endmenu

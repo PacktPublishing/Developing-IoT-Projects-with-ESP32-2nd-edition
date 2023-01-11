@@ -1,0 +1,25 @@
+menu "ESP32-C3 Devkit M1 config"
+	menu "GPIO Button"
+	    config IO_GLITCH_FILTER_TIME_MS
+	        int "IO glitch filter timer ms (10~100)"
+	        range 10 100
+	        default 50
+	endmenu
+	
+	menu "WS2812 RGB LED"
+	
+	    config WS2812_LED_ENABLE
+	        bool "Enable RGB LED"
+	        default y
+	        help
+	            Disable the WS2812 RGB LED.
+	
+	    config WS2812_LED_GPIO
+	        int "WS2812 LED GPIO"
+	        default 8
+	        depends on WS2812_LED_ENABLE
+	        help
+	            Set the WS2812 RGB LED GPIO.
+	
+	endmenu
+endmenu

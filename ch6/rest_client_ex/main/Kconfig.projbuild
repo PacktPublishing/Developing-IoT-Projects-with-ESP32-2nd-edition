@@ -1,0 +1,15 @@
+menu "Application settings"
+
+    config REST_SERVER_IP
+        string "IP of the RESTful server"
+        default "10.1.1.10"
+        help
+            The local network IP of the machine where you run RESTful server
+
+    config REST_SERVER_PORT
+        int "Port of the server in use"
+        default 5000
+        help
+            The port of the RESTful server.
+   
+endmenu

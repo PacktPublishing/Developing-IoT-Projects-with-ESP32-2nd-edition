@@ -1,0 +1,14 @@
+sudo ufw allow 5000
+
+
+openssl req -x509 -newkey rsa:4096 -nodes -out cert.pem -keyout key.pem -days 365
+
+enter server IP
+
+export FLASK_APP=./file_server.py
+
+flask run --cert cert.pem --key key.pem  -h 0.0.0.0
+
+openssl s_client -showcerts -connect localhost:5000
+
+curl https://192.168.1.95:5000/info -k

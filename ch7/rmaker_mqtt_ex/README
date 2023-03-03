@@ -1,0 +1,26 @@
+
+https://github.com/espressif/esp-rainmaker
+git clone --recursive https://github.com/espressif/esp-rainmaker.git
+
+
+
+2013  pyenv virtualenv  3.8.0 rmaker_cli
+ 2014  pyenv local rmaker_cli 
+ 2015  pip install -r requirements.txt 
+ 2016  pip install --upgrade pip
+ 2017  pip install pyparsing
+ 2018  pip install -r requirements.txt 
+ 2019  python ./rainmaker.py signup
+ 2020  export IDF_PATH=/home/ozan/esp/esp-idf
+ 2021  python ./rainmaker.py signup
+ 2022  python ./rainmaker.py signup <your_email>
+ 2023  python ./rainmaker.py login <your_email>
+ 2024  python ./rainmaker.py login 
+
+use app to provision
+
+2039  python ./rainmaker.py getnodestatus A0764E76F90C
+ 2040  python ./rainmaker.py getnodeconfig A0764E76F90C | grep -i ota
+ 2041  python ./rainmaker.py otaupgrade A0764E76F90C ../examples/switch/build/switch.bin
+
+(rmaker_cli) $ python ./rainmaker.py otaupgrade A0764E76F90C ../../../rmaker_ota_ex/build/rmaker_ota_ex.bin

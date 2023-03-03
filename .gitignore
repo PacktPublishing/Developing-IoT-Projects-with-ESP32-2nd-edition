@@ -6,3 +6,5 @@ build*/
 dependencies.lock
 backup/
 __pycache__/
+.python-version
+*.bin

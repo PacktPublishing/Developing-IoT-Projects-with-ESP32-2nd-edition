@@ -1,0 +1,15 @@
+menu "Application settings"
+
+    config FILE_SERVER_IP
+        string "IP of the file server"
+        default "10.1.1.10"
+        help
+            The local network IP of the machine where you run the file server
+
+    config FILE_SERVER_PORT
+        string "Port of the server in use"
+        default "5000"
+        help
+            The port of the file server.
+   
+endmenu

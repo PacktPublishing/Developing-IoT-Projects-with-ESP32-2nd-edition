@@ -1,3 +1,7 @@
 [submodule "ch7/common/esp-rainmaker"]
 	path = ch7/common/esp-rainmaker
 	url = https://github.com/espressif/esp-rainmaker.git
+[submodule "ch8/common/esp-aws-iot"]
+	path = ch8/common/esp-aws-iot
+	url = https://github.com/espressif/esp-aws-iot
+	branch = release/202210.01-LTS

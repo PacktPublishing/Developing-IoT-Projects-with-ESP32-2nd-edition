@@ -1,0 +1,1 @@
+idf_component_register(SRCS ./aws_ex.cpp INCLUDE_DIRS ".")

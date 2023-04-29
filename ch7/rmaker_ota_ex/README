@@ -17,6 +17,10 @@ git clone --recursive https://github.com/espressif/esp-rainmaker.git
  2023  python ./rainmaker.py login <your_email>
  2024  python ./rainmaker.py login 
 
+
+see this if any error after installation:
+https://stackoverflow.com/questions/72441758/typeerror-descriptors-cannot-not-be-created-directly
+
 use app to provision
 
 2039  python ./rainmaker.py getnodestatus A0764E76F90C

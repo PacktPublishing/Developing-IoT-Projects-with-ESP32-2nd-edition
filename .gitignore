@@ -2,6 +2,7 @@ tmp/
 .vscode
 .pio
 *.old
+*.log
 build*/
 dependencies.lock
 backup/

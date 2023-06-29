@@ -1,0 +1,35 @@
+1 da kai kong tiao
+2 guan bi kong tiao
+3 zeng da feng su
+4 jian xiao feng su
+5 shen gao yi du
+6 jiang di yi du
+7 zhi leng mo shi
+8 zhi re mo shi
+9 jie neng mo shi
+10 guan bi jie neng mo shi
+11 chu shi mo shi
+12 guan bi chu shi mo shi
+13 shui mian mo shi
+14 guan bi shui mian mo shi
+15 di shi yi xiao shi
+16 di shi liang xiao shi
+17 zui da feng su
+18 zui gao feng su
+19 zui xiao feng su
+20 da kai dian deng
+21 guan bi dian deng
+22 tiao dao shi liu du
+23 tiao dao shi qi du
+24 tiao dao shi ba du
+25 tiao dao shi jiu du
+26 tiao dao er shi du
+27 tiao dao er shi yi du
+28 tiao dao er shi er du
+29 tiao dao er shi san du
+30 tiao dao er shi si du
+31 tiao dao er shi wu du
+32 tiao dao er shi liu du
+33 tiao dao er shi qi du
+34 tiao dao er shi ba du
+35 tiao dao er shi jiu du

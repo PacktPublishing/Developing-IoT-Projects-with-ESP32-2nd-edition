@@ -23,18 +23,19 @@ namespace app
         int cnt = 0;
         std::function<void(const uint8_t *, size_t)> save;
 
-        static void read(void *d)
+        static void read(void *arg)
         {
-            AppSensor *sensor = reinterpret_cast<AppSensor *>(d);
+            AppSensor *sensor = reinterpret_cast<AppSensor *>(arg);
             while (1)
             {
                 vTaskDelay(pdMS_TO_TICKS(100));
                 SensorData d{20, 50, 1000, 55};
                 sensor->readings[sensor->cnt++] = d;
+
                 if (sensor->cnt == 100)
                 {
-                    sensor->cnt = 0;
                     sensor->save(reinterpret_cast<const uint8_t *>(sensor->readings), 100 * sizeof(SensorData));
+                    sensor->cnt = 0;
                 }
             }
         }

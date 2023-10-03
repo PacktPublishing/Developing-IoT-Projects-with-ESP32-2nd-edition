@@ -40,8 +40,8 @@ list(APPEND SOURCE_FILES ${MODEL_FILES})
 
 idf_component_register(SRCS "main.cpp" "app_led.c" "${SOURCE_FILES}"
                        INCLUDE_DIRS "${include_dirs}" 
-                       "/home/ozan/projects/example-standalone-inferencing-espressif-esp32/edge-impulse-sdk/porting/espressif/ESP-NN/include"
-                       "/home/ozan/projects/example-standalone-inferencing-espressif-esp32/edge-impulse-sdk/porting/espressif/ESP-NN/src/common"
-                       "/home/ozan/projects/example-standalone-inferencing-espressif-esp32/edge-impulse-sdk/porting/espressif/ESP-NN/tests/include")
+                       "../edge-impulse-sdk/porting/espressif/ESP-NN/include"
+                       "../edge-impulse-sdk/porting/espressif/ESP-NN/src/common"
+                       "../edge-impulse-sdk/porting/espressif/ESP-NN/tests/include")
 
 target_compile_options(${COMPONENT_LIB} PRIVATE -O3)

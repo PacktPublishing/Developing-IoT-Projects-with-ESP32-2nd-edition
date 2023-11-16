@@ -1,6 +1,7 @@
 #pragma once
 
 #include "driver/gpio.h"
+#define GPIO_SEL_4 (1<<4)
 
 namespace app
 {

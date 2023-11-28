@@ -102,7 +102,7 @@ Installation instructions:
 1. Git client:
    * Follow the steps as given in the download page for your specific platform (MacOS, Windows, Linux/Unix)
 2. Visual Studio Code
-..a. Follow the steps as given in the download page for your specific platform (MacOS, Windows, Linux/Unix)
+__a. Follow the steps as given in the download page for your specific platform (MacOS, Windows, Linux/Unix)
 3. Python3:
     i. Download and run the platform-specific installer
 4. ESP-IDF 4.4.4 (You can follow the Getting Started guide or clone the GitHub repository)

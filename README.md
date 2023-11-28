@@ -77,6 +77,7 @@ Embark on your journey to build secure, production-grade IoT systems with ESP32 
 > If you feel this book is for you, get your [copy](https://www.amazon.in/Developing-IoT-Projects-ESP32-production-grade-ebook/dp/B0BM9LQXMD) today! <img alt="Coding" height="15" width="35"  src="https://media.tenor.com/ex_HDD_k5P8AAAAi/habbo-habbohotel.gif">
 
 
+
 With the following software and hardware list you can run all code files present in the book.
 
 ## Software and hardware list
@@ -90,33 +91,33 @@ With the following software and hardware list you can run all code files present
 | SquareLine Studio (>=1.1.1)  | [https://squareline.io/downloads](https://squareline.io/downloads) | PC/laptop | Any|
 | Curl (>8) | [https://curl.se/download.html](https://curl.se/download.html) | PC/laptop | Any|
 | Mosquitto (>2) | [https://mosquitto.org/download/](https://mosquitto.org/download/) | PC/laptop | Any|
-| ESP SoftAP Provisioning (latest) | [Mobile App stores] | Mobile devices | Any|
+| ESP SoftAP Provisioning (latest) | Mobile App stores | Mobile devices | Any|
 | Pyenv (latest) | [https://github.com/pyenv/pyenv](https://github.com/pyenv/pyenv) | PC/laptop | Any|
-| ESP Rainmaler (latest)| [Mobile App stores] | Mobile devices | Any|
+| ESP Rainmaler (latest)| Mobile App stores | Mobile devices | Any|
 | Openssl (latest) | [https://www.openssl.org/community/binaries.html](https://www.openssl.org/community/binaries.html) | PC/laptop | Any|
-| Amazon Alexa (latest) | [Mobile App stores] | Mobile devices | Any|
+| Amazon Alexa (latest) | Mobile App stores | Mobile devices | Any|
 
 ## Detailed installation steps (software-wise)
 Installation instructions:
 1. Git client:
-   a. Follow the steps as given in the download page for your specific platform (MacOS, Windows, Linux/Unix)
+   i. Follow the steps as given in the download page for your specific platform (MacOS, Windows, Linux/Unix)
 2. Visual Studio Code
-   a. Follow the steps as given in the download page for your specific platform (MacOS, Windows, Linux/Unix)
+   i. Follow the steps as given in the download page for your specific platform (MacOS, Windows, Linux/Unix)
 3. Python3:
-   a. Download and run the platform-specific installer
+   i. Download and run the platform-specific installer
 4. ESP-IDF 4.4.4 (You can follow the Getting Started guide or clone the GitHub repository)
-   a. Create a new directory with name “esp” in your home directory.
-   b. Clone the repository (git clone --recursive --branch v4.4.4 [https://github.com/espressif/esp-idf](https://github.com/espressif/esp-idf))
-   c. Run the install script for your platform
-   d. For Windows users, there are binary installers for easy setup here: [https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/windows-setup.html](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/windows-setup.html)
+   i. Create a new directory with name “esp” in your home directory.
+   ii. Clone the repository (git clone --recursive --branch v4.4.4 [https://github.com/espressif/esp-idf](https://github.com/espressif/esp-idf))
+   iii. Run the install script for your platform
+   iiii. For Windows users, there are binary installers for easy setup here: [https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/windows-setup.html](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/windows-setup.html)
 5. SquareLine Studio
-   a. Download and run the platform-specific installer
+   i. Download and run the platform-specific installer
 6. Curl
-   a. Download and run the platform-specific installer
+   i. Download and run the platform-specific installer
 7. Mosquitto
-   a. Download and run the platform-specific installer
+   i. Download and run the platform-specific installer
 8. Pyenv
-   a. Follow the steps as given in the GitHub repository for your specific platform (MacOS, Windows, Linux/Unix)
+   i. Follow the steps as given in the GitHub repository for your specific platform (MacOS, Windows, Linux/Unix)
 9. OpenSSL: It doesn’t provide direct binaries. See the 3rd-party providers as listed in the wiki: [https://wiki.openssl.org/index.php/Binaries](https://wiki.openssl.org/index.php/Binaries)
 10. ESP SoftAP Provisioning: Install from the mobile app store for your specific platform (Android, iOS)
 11. ESP Rainmaler: Install from the mobile app store for your specific platform (Android, iOS)

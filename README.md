@@ -100,7 +100,7 @@ With the following software and hardware list you can run all code files present
 ## Detailed installation steps (software-wise)
 Installation instructions:
 1. Git client:
-    i. Follow the steps as given in the download page for your specific platform (MacOS, Windows, Linux/Unix)
+   * Follow the steps as given in the download page for your specific platform (MacOS, Windows, Linux/Unix)
 2. Visual Studio Code
     i. Follow the steps as given in the download page for your specific platform (MacOS, Windows, Linux/Unix)
 3. Python3:

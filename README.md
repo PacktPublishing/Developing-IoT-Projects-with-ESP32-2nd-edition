@@ -100,24 +100,24 @@ With the following software and hardware list you can run all code files present
 ## Detailed installation steps (software-wise)
 Installation instructions:
 1. Git client:
-   i. Follow the steps as given in the download page for your specific platform (MacOS, Windows, Linux/Unix)
+    i. Follow the steps as given in the download page for your specific platform (MacOS, Windows, Linux/Unix)
 2. Visual Studio Code
-   i. Follow the steps as given in the download page for your specific platform (MacOS, Windows, Linux/Unix)
+    i. Follow the steps as given in the download page for your specific platform (MacOS, Windows, Linux/Unix)
 3. Python3:
-   i. Download and run the platform-specific installer
+    i. Download and run the platform-specific installer
 4. ESP-IDF 4.4.4 (You can follow the Getting Started guide or clone the GitHub repository)
-   i. Create a new directory with name “esp” in your home directory.
-   ii. Clone the repository (git clone --recursive --branch v4.4.4 [https://github.com/espressif/esp-idf](https://github.com/espressif/esp-idf))
-   iii. Run the install script for your platform
-   iiii. For Windows users, there are binary installers for easy setup here: [https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/windows-setup.html](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/windows-setup.html)
+    i. Create a new directory with name “esp” in your home directory.
+    ii. Clone the repository (git clone --recursive --branch v4.4.4 [https://github.com/espressif/esp-idf](https://github.com/espressif/esp-idf))
+    iii. Run the install script for your platform
+    iiii. For Windows users, there are binary installers for easy setup here: [https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/windows-setup.html](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/windows-setup.html)
 5. SquareLine Studio
-   i. Download and run the platform-specific installer
+    i. Download and run the platform-specific installer
 6. Curl
-   i. Download and run the platform-specific installer
+    i. Download and run the platform-specific installer
 7. Mosquitto
-   i. Download and run the platform-specific installer
+    i. Download and run the platform-specific installer
 8. Pyenv
-   i. Follow the steps as given in the GitHub repository for your specific platform (MacOS, Windows, Linux/Unix)
+    i. Follow the steps as given in the GitHub repository for your specific platform (MacOS, Windows, Linux/Unix)
 9. OpenSSL: It doesn’t provide direct binaries. See the 3rd-party providers as listed in the wiki: [https://wiki.openssl.org/index.php/Binaries](https://wiki.openssl.org/index.php/Binaries)
 10. ESP SoftAP Provisioning: Install from the mobile app store for your specific platform (Android, iOS)
 11. ESP Rainmaler: Install from the mobile app store for your specific platform (Android, iOS)

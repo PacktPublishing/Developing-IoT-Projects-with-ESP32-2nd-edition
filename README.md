@@ -25,7 +25,8 @@ Embark on your journey to build secure, production-grade IoT systems with ESP32 
 * Innovate with tinyML on ESP32-S3 and the Edge Impulse platformr
 
 
-## What's New 
+## New Edition v/s Previous Edition
+The author highlights the Internet of Things' (IoT) revolutionary journey since the first edition in this new edition, highlighting technological advancements and the expansion of Espressif Systems' chip range. The advent of the ESP32-C family, with its affordable RISC-V architecture, and the ESP32-S family, which offers Artificial Intelligence-of-Things (AIoT) solutions, serve as examples of the evolution. The introduction highlights how ubiquitous the Internet of Things is among the younger age, giving instances such as a three-year-old who uses an Echo device as a music box. Notable modifications include the use of ESP-IDF and C++ as examples, which facilitate hardware configuration using various development kits. The content realignment mirrors the shifting landscape of IoT development by giving machine learning projects priority while Bluetooth/BLE topics are marginalised. Incorporating conversations on third-party library integration enhances comprehension. The author presents the new version as a study of developing technologies, presenting in-depth insights and useful examples that speak to the contemporary IoT innovation spirit, while acknowledging the first edition's relevance for IoT beginners
  
 
 ## Outline and Chapter Summary

@@ -153,6 +153,7 @@ static esp_err_t i2c_setup_port(const i2c_dev_t *dev)
         i2c_config_t temp;
         memcpy(&temp, &dev->cfg, sizeof(i2c_config_t));
         temp.mode = I2C_MODE_MASTER;
+        temp.clk_flags = 0;
 
         // Driver reinstallation
         if (states[dev->port].installed)

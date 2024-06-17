@@ -10,3 +10,4 @@ __pycache__/
 .python-version
 *.bin
 .devcontainer/
+managed_components/

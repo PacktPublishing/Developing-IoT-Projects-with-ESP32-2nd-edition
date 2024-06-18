@@ -11,3 +11,4 @@ __pycache__/
 *.bin
 .devcontainer/
 managed_components/
+*.zip

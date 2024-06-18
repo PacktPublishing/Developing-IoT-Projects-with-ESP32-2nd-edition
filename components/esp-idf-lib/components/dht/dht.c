@@ -1,3 +1,31 @@
+/*
+ * Copyright (c) 2016 Jonathan Hartsuiker <https://github.com/jsuiker>
+ * Copyright (c) 2018 Ruslan V. Uss <unclerus@gmail.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of itscontributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 /**
  * @file dht.c
  *
@@ -5,8 +33,8 @@
  *
  * Ported from esp-open-rtos
  *
- * Copyright (C) 2016 Jonathan Hartsuiker <https://github.com/jsuiker>\n
- * Copyright (C) 2018 Ruslan V. Uss <https://github.com/UncleRus>\n
+ * Copyright (c) 2016 Jonathan Hartsuiker <https://github.com/jsuiker>\n
+ * Copyright (c) 2018 Ruslan V. Uss <unclerus@gmail.com>\n
  *
  * BSD Licensed as described in the file LICENSE
  */
@@ -15,6 +43,7 @@
 #include <freertos/FreeRTOS.h>
 #include <string.h>
 #include <esp_log.h>
+#include <ets_sys.h>
 #include <esp_idf_lib_helpers.h>
 
 // DHT timer precision in microseconds
@@ -46,20 +75,20 @@
  *  of length 5.  The first and third bytes are humidity (%) and temperature (C), respectively.  Bytes 2 and 4
  *  are zero-filled and the fifth is a checksum such that:
  *
- *  byte_5 == (byte_1 + byte_2 + byte_3 + btye_4) & 0xFF
+ *  byte_5 == (byte_1 + byte_2 + byte_3 + byte_4) & 0xFF
  *
  */
 
-static const char *TAG = "DHTxx";
+static const char *TAG = "dht";
 
 #if HELPER_TARGET_IS_ESP32
 static portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
-#define PORT_ENTER_CRITICAL portENTER_CRITICAL(&mux)
-#define PORT_EXIT_CRITICAL portEXIT_CRITICAL(&mux)
+#define PORT_ENTER_CRITICAL() portENTER_CRITICAL(&mux)
+#define PORT_EXIT_CRITICAL() portEXIT_CRITICAL(&mux)
 
 #elif HELPER_TARGET_IS_ESP8266
-#define PORT_ENTER_CRITICAL portENTER_CRITICAL()
-#define PORT_EXIT_CRITICAL portEXIT_CRITICAL()
+#define PORT_ENTER_CRITICAL() portENTER_CRITICAL()
+#define PORT_EXIT_CRITICAL() portEXIT_CRITICAL()
 #endif
 
 #define CHECK_ARG(VAL) do { if (!(VAL)) return ESP_ERR_INVALID_ARG; } while (0)
@@ -67,7 +96,7 @@ static portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
 #define CHECK_LOGE(x, msg, ...) do { \
         esp_err_t __; \
         if ((__ = x) != ESP_OK) { \
-            PORT_EXIT_CRITICAL; \
+            PORT_EXIT_CRITICAL(); \
             ESP_LOGE(TAG, msg, ## __VA_ARGS__); \
             return __; \
         } \
@@ -174,18 +203,17 @@ static inline int16_t dht_convert_data(dht_sensor_type_t sensor_type, uint8_t ms
 esp_err_t dht_read_data(dht_sensor_type_t sensor_type, gpio_num_t pin,
         int16_t *humidity, int16_t *temperature)
 {
-    CHECK_ARG(humidity && temperature);
+    CHECK_ARG(humidity || temperature);
 
     uint8_t data[DHT_DATA_BYTES] = { 0 };
 
     gpio_set_direction(pin, GPIO_MODE_OUTPUT_OD);
     gpio_set_level(pin, 1);
 
-    PORT_ENTER_CRITICAL;
+    PORT_ENTER_CRITICAL();
     esp_err_t result = dht_fetch_data(sensor_type, pin, data);
-    if(result == ESP_OK){
-        PORT_EXIT_CRITICAL;
-    }
+    if (result == ESP_OK)
+        PORT_EXIT_CRITICAL();
 
     /* restore GPIO direction because, after calling dht_fetch_data(), the
      * GPIO direction mode changes */
@@ -201,8 +229,10 @@ esp_err_t dht_read_data(dht_sensor_type_t sensor_type, gpio_num_t pin,
         return ESP_ERR_INVALID_CRC;
     }
 
-    *humidity = dht_convert_data(sensor_type, data[0], data[1]);
-    *temperature = dht_convert_data(sensor_type, data[2], data[3]);
+    if (humidity)
+        *humidity = dht_convert_data(sensor_type, data[0], data[1]);
+    if (temperature)
+        *temperature = dht_convert_data(sensor_type, data[2], data[3]);
 
     ESP_LOGD(TAG, "Sensor data: humidity=%d, temp=%d", *humidity, *temperature);
 
@@ -212,16 +242,18 @@ esp_err_t dht_read_data(dht_sensor_type_t sensor_type, gpio_num_t pin,
 esp_err_t dht_read_float_data(dht_sensor_type_t sensor_type, gpio_num_t pin,
         float *humidity, float *temperature)
 {
-    CHECK_ARG(humidity && temperature);
+    CHECK_ARG(humidity || temperature);
 
     int16_t i_humidity, i_temp;
 
-    esp_err_t res = dht_read_data(sensor_type, pin, &i_humidity, &i_temp);
+    esp_err_t res = dht_read_data(sensor_type, pin, humidity ? &i_humidity : NULL, temperature ? &i_temp : NULL);
     if (res != ESP_OK)
         return res;
 
-    *humidity = i_humidity / 10.0;
-    *temperature = i_temp / 10.0;
+    if (humidity)
+        *humidity = i_humidity / 10.0;
+    if (temperature)
+        *temperature = i_temp / 10.0;
 
     return ESP_OK;
 }

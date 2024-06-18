@@ -1,5 +1,8 @@
+.. _ina260:
+
 ina260 - Driver for INA260 precision digital current and power monitor
 ======================================================================
 
 .. doxygengroup:: ina260
+   :members:
 

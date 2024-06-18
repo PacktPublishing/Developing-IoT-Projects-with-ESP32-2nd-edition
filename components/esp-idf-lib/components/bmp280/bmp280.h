@@ -1,3 +1,27 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2016 sheinz <https://github.com/sheinz>
+ * Copyright (c) 2018 Ruslan V. Uss <unclerus@gmail.com>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 /**
  * @file bmp280.h
  * @defgroup bmp280 bmp280
@@ -7,8 +31,8 @@
  *
  * Ported from esp-open-rtos
  *
- * Copyright (C) 2016 sheinz <https://github.com/sheinz>\n
- * Copyright (C) 2018 Ruslan V. Uss <https://github.com/UncleRus>
+ * Copyright (c) 2016 sheinz <https://github.com/sheinz>\n
+ * Copyright (c) 2018 Ruslan V. Uss <unclerus@gmail.com>
  *
  * MIT Licensed as described in the file LICENSE
  */
@@ -75,7 +99,7 @@ typedef enum {
 
 /**
  * Configuration parameters for BMP280 module.
- * Use function bmp280_init_default_params to use default configuration.
+ * Use function ::bmp280_init_default_params() to use default configuration.
  */
 typedef struct {
     BMP280_Mode mode;
@@ -116,74 +140,103 @@ typedef struct {
 } bmp280_t;
 
 /**
- * @brief Initialize device descriptior
- * @param[out] dev Pointer to device descriptor
- * @param[in] addr BMP280 address
- * @param[in] port I2C port number
- * @param[in] sda_gpio GPIO pin for SDA
- * @param[in] scl_gpio GPIO pin for SCL
+ * @brief Initialize device descriptor
+ *
+ * @param dev Device descriptor
+ * @param addr BMP280 address
+ * @param port I2C port number
+ * @param sda_gpio GPIO pin for SDA
+ * @param scl_gpio GPIO pin for SCL
  * @return `ESP_OK` on success
  */
 esp_err_t bmp280_init_desc(bmp280_t *dev, uint8_t addr, i2c_port_t port, gpio_num_t sda_gpio, gpio_num_t scl_gpio);
 
 /**
  * @brief Free device descriptor
- * @param dev Pointer to device descriptor
+ *
+ * @param dev Device descriptor
  * @return `ESP_OK` on success
  */
 esp_err_t bmp280_free_desc(bmp280_t *dev);
 
 /**
- * Initialize default parameters.
+ * @brief Initialize default parameters
+ *
  * Default configuration:
- *      mode: NORAML
- *      filter: OFF
- *      oversampling: x4
- *      standby time: 250ms
+ *
+ *  - mode: NORMAL
+ *  - filter: OFF
+ *  - oversampling: x4
+ *  - standby time: 250ms
+ *
+ * @param[out] params Default parameters
+ * @return `ESP_OK` on success
  */
 esp_err_t bmp280_init_default_params(bmp280_params_t *params);
 
 /**
- * Initialize BMP280 module, probes for the device, soft resets the device,
- * reads the calibration constants, and configures the device using the supplied
- * parameters. Returns `ESP_OK` on success.
+ * @brief Initialize BMP280 module
+ *
+ * Probes for the device, soft resets the device, reads the calibration
+ * constants, and configures the device using the supplied parameters.
  *
  * This may be called again to soft reset the device and initialize it again.
+ *
+ * @param dev Device descriptor
+ * @param params Parameters
+ * @return `ESP_OK` on success
  */
 esp_err_t bmp280_init(bmp280_t *dev, bmp280_params_t *params);
 
 /**
- * Start measurement in forced mode.
+ * @brief Start measurement in forced mode
+ *
  * The module remains in forced mode after this call.
  * Do not call this method in normal mode.
+ *
+ * @param dev Device descriptor
+ * @return `ESP_OK` on success
  */
 esp_err_t bmp280_force_measurement(bmp280_t *dev);
 
 /**
- * Check if BMP280 is busy with measuring temperature/pressure.
- * Return true if BMP280 is busy.
+ * @brief Check if BMP280 is busy
+ *
+ * @param dev Device descriptor
+ * @param[out] busy true if BMP280 measures temperature/pressure
+ * @return `ESP_OK` on success
  */
 esp_err_t bmp280_is_measuring(bmp280_t *dev, bool *busy);
 
 /**
- * Read compensated temperature and pressure data:
+ * @brief Read raw compensated temperature and pressure data
  *
- *  Temperature in degrees Celsius times 100.
+ * Temperature in degrees Celsius times 100.
  *
- *  Pressure in Pascals in fixed point 24 bit integer 8 bit fraction format.
+ * Pressure in Pascals in fixed point 24 bit integer 8 bit fraction format.
  *
- *  Humidity is optional and only read for the BME280, in percent relative
- *  humidity as a fixed point 22 bit interger and 10 bit fraction format.
+ * Humidity is optional and only read for the BME280, in percent relative
+ * humidity as a fixed point 22 bit integer and 10 bit fraction format.
+ *
+ * @param dev Device descriptor
+ * @param[out] temperature Temperature, deg.C * 100
+ * @param[out] pressure Pressure
+ * @param[out] humidity Humidity, optional
+ * @return `ESP_OK` on success
  */
 esp_err_t bmp280_read_fixed(bmp280_t *dev, int32_t *temperature,
                             uint32_t *pressure, uint32_t *humidity);
 
 /**
- * Read compensated temperature and pressure data:
- *  Temperature in degrees Celsius.
- *  Pressure in Pascals.
- *  Humidity is optional and only read for the BME280, in percent relative
- *  humidity.
+ * @brief Read compensated temperature and pressure data
+ *
+ * Humidity is optional and only read for the BME280.
+ *
+ * @param dev Device descriptor
+ * @param[out] temperature Temperature, deg.C
+ * @param[out] pressure Pressure, Pascal
+ * @param[out] humidity Relative humidity, percents (optional)
+ * @return `ESP_OK` on success
  */
 esp_err_t bmp280_read_float(bmp280_t *dev, float *temperature,
                             float *pressure, float *humidity);

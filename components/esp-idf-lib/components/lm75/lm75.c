@@ -14,6 +14,15 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+/**
+ * @file lm75.c
+ *
+ * ESP-IDF driver for LM75, a digital temperature sensor and thermal watchdog.
+ *
+ * The driver depends on i2cdev library in `esp-idf-lib`.
+ *
+ * The driver was written using LM75B.
+ */
 #include <esp_log.h>
 #include <esp_err.h>
 #include <esp_idf_lib_helpers.h>
@@ -82,7 +91,7 @@ esp_err_t lm75_read_temperature(i2c_dev_t *dev, float *value)
 
     I2C_DEV_TAKE_MUTEX(dev);
     CHECK_LOGE(dev, read_register16(dev, LM75_REG_TEMP, &raw_data),
-            "lm75_read_temperature(): read_register16() failed: regsiter: 0x%x", LM75_REG_TEMP);
+            "lm75_read_temperature(): read_register16() failed: register: 0x%x", LM75_REG_TEMP);
     I2C_DEV_GIVE_MUTEX(dev);
 
     *value = (raw_data >> 5) * 0.125;
@@ -117,7 +126,7 @@ esp_err_t lm75_set_os_threshold(i2c_dev_t *dev, const float value)
      *  7 LSB of the LSByte are equal to zero and should be ignored.
      */
     if (value < 0) {
-        reg_value = ((uint16_t)(abs(value) * 2) ^ 0xff) + 1;
+        reg_value = ((uint16_t)(abs((int16_t)value) * 2) ^ 0xff) + 1;
     } else {
         reg_value = value * 2;
     }
@@ -144,7 +153,7 @@ esp_err_t lm75_get_os_threshold(i2c_dev_t *dev, float *value)
 
     I2C_DEV_TAKE_MUTEX(dev);
     CHECK_LOGE(dev, read_register16(dev, LM75_REG_TOS, &reg_value),
-            "lm75_get_os_threshold(): read_register16() failed: regsiter: 0x%x", LM75_REG_TOS);
+            "lm75_get_os_threshold(): read_register16() failed: register: 0x%x", LM75_REG_TOS);
     I2C_DEV_GIVE_MUTEX(dev);
 
     ESP_LOGV(TAG, "lm75_get_os_threshold(): reg_value: 0x%x 9 bit reg_value: 0x%x", reg_value, reg_value >> 7);
@@ -205,7 +214,7 @@ esp_err_t lm75_clear_bits_register8(i2c_dev_t *dev, uint8_t reg, uint8_t mask)
         value ^= mask;
         ESP_LOGV(TAG, "lm75_clear_bits_register8(): updating register with value: 0x%x", value);
         CHECK_LOGE(dev, write_register8(dev, reg, value),
-                "write_register8() failed: regsiter 0x%x", reg);
+                "write_register8() failed: register 0x%x", reg);
     } else {
         ESP_LOGV(TAG, "lm75_clear_bits_register8(): register unchanged");
     }

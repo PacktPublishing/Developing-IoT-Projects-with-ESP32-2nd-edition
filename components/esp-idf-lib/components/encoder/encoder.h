@@ -1,3 +1,30 @@
+/*
+ * Copyright (c) 2019 Ruslan V. Uss <unclerus@gmail.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of itscontributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 /**
  * @file encoder.h
  * @defgroup encoder encoder
@@ -5,7 +32,7 @@
  *
  * ESP-IDF HW timer-based driver for rotary encoders
  *
- * Copyright (C) 2019 Ruslan V. Uss <unclerus@gmail.com>
+ * Copyright (c) 2019 Ruslan V. Uss <unclerus@gmail.com>
  *
  * BSD Licensed as described in the file LICENSE
  */
@@ -30,6 +57,11 @@ typedef enum {
     RE_BTN_LONG_PRESSED = 2   //!< Button currently long pressed
 } rotary_encoder_btn_state_t;
 
+//Rotary encoder acceleration variables
+typedef struct {
+    int64_t last_time;
+    uint16_t coeff;
+} rotary_encoder_acceleration_t;
 /**
  * Rotary encoder descriptor
  */
@@ -41,6 +73,7 @@ typedef struct
     size_t index;
     uint64_t btn_pressed_time_us;
     rotary_encoder_btn_state_t btn_state;
+    rotary_encoder_acceleration_t acceleration;
 } rotary_encoder_t;
 
 /**
@@ -65,25 +98,45 @@ typedef struct
 } rotary_encoder_event_t;
 
 /**
- * Initialize library
- * @param queue Event queue
+ * @brief Initialize library
+ *
+ * @param queue Event queue to send encoder events
  * @return `ESP_OK` on success
  */
 esp_err_t rotary_encoder_init(QueueHandle_t queue);
 
 /**
- * Add new rotary encoder
+ * @brief Add new rotary encoder
+ *
  * @param re Encoder descriptor
  * @return `ESP_OK` on success
  */
 esp_err_t rotary_encoder_add(rotary_encoder_t *re);
 
 /**
- * Remove previously added rotary encoder
+ * @brief Remove previously added rotary encoder
+ *
  * @param re Encoder descriptor
  * @return `ESP_OK` on success
  */
 esp_err_t rotary_encoder_remove(rotary_encoder_t *re);
+
+/**
+ * @brief Enable acceleration on the rotary encoder
+ *
+ * @param re Encoder descriptor
+ * @param coeff Acceleration coefficient. Higher value means faster acceleration
+ * @return esp_err_t
+ */
+esp_err_t rotary_encoder_enable_acceleration(rotary_encoder_t *re, uint16_t coeff);
+
+/**
+ * @brief Disable acceleration on the rotary encoder
+ *
+ * @param re Encoder descriptor
+ * @return `ESP_OK` on success
+ */
+esp_err_t rotary_encoder_disable_acceleration(rotary_encoder_t *re);
 
 #ifdef __cplusplus
 }

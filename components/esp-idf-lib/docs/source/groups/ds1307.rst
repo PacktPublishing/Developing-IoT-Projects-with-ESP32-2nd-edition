@@ -1,5 +1,8 @@
+.. _ds1307:
+
 ds1307 - Driver for DS1307 RTC module
 =====================================
 
 .. doxygengroup:: ds1307
+   :members:
 

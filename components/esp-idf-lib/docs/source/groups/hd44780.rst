@@ -1,5 +1,8 @@
+.. _hd44780:
+
 hd44780 - Universal driver for HD44780 LCD display
 ==================================================
 
 .. doxygengroup:: hd44780
+   :members:
 

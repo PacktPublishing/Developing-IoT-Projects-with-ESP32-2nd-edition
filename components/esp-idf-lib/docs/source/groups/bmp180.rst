@@ -1,5 +1,8 @@
+.. _bmp180:
+
 bmp180 - Driver for BMP180 digital pressure sensor
 ==================================================
 
 .. doxygengroup:: bmp180
+   :members:
 

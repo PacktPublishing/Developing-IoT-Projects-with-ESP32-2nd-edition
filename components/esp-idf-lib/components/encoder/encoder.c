@@ -1,9 +1,36 @@
+/*
+ * Copyright (c) 2019 Ruslan V. Uss <unclerus@gmail.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of itscontributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 /**
  * @file encoder.c
  *
  * ESP-IDF HW timer-based driver for rotary encoders
  *
- * Copyright (C) 2019 Ruslan V. Uss <unclerus@gmail.com>
+ * Copyright (c) 2019 Ruslan V. Uss <unclerus@gmail.com>
  *
  * BSD Licensed as described in the file LICENSE
  */
@@ -16,12 +43,16 @@
 #define MUTEX_TIMEOUT 10
 
 #ifdef CONFIG_RE_BTN_PRESSED_LEVEL_0
-    #define CONFIG_RE_BTN_PRESSED_LEVEL 0
+#define BTN_PRESSED_LEVEL 0
 #else
-    #define CONFIG_RE_BTN_PRESSED_LEVEL 1
+#define BTN_PRESSED_LEVEL 1
 #endif
 
-static const char *TAG = "ENCODER";
+#if defined(CONFIG_IDF_TARGET_ESP8266) && CONFIG_RE_INTERVAL_US < 10000
+#error Too small CONFIG_RE_INTERVAL_US! For ESP8266 it should be >= 10000
+#endif
+
+static const char *TAG = "encoder";
 static rotary_encoder_t *encs[CONFIG_RE_MAX] = { 0 };
 static const int8_t valid_states[] = { 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0 };
 static SemaphoreHandle_t mutex;
@@ -48,7 +79,7 @@ inline static void read_encoder(rotary_encoder_t *re)
         }
 
         // read button state
-        if (gpio_get_level(re->pin_btn) == CONFIG_RE_BTN_PRESSED_LEVEL)
+        if (gpio_get_level(re->pin_btn) == BTN_PRESSED_LEVEL)
         {
             if (re->btn_state == RE_BTN_RELEASED)
             {
@@ -97,13 +128,33 @@ inline static void read_encoder(rotary_encoder_t *re)
 
     re->store = (re->store << 4) | re->code;
 
-    if (re->store == 0xe817) inc = 1;
-    if (re->store == 0xd42b) inc = -1;
+    if ((re->store == 0xe817)||(re->store == 0x17e8)) inc = 1;
+    if ((re->store == 0xd42b)||(re->store == 0x2bd4)) inc = -1;
 
     if (inc)
     {
-        ev.type = RE_ET_CHANGED;
         ev.diff = inc;
+        if (re->acceleration.coeff > 1)
+        {        
+            int64_t nowMicros = esp_timer_get_time();
+            // at 200 ms, we want to have minimum acceleration
+            uint32_t accelerationMinCutoffMillis = CONFIG_RE_ACCELERATION_MIN_CUTOFF;
+            // at 4 ms, we want to have maximum acceleration
+            uint32_t accelerationMaxCutoffMillis = CONFIG_RE_ACCELERATION_MAX_CUTOFF;
+            uint32_t millisAfterLastMotion = (nowMicros - re->acceleration.last_time) / 1000u;
+            re->acceleration.last_time = nowMicros;
+
+            if (millisAfterLastMotion < accelerationMinCutoffMillis)
+            {
+                if (millisAfterLastMotion < accelerationMaxCutoffMillis)
+                {
+                    millisAfterLastMotion = accelerationMaxCutoffMillis; // limit to maximum acceleration
+                }
+                ev.diff = inc * ((int32_t)(re->acceleration.coeff / millisAfterLastMotion) == 0 ? 1 : (int32_t)(re->acceleration.coeff / millisAfterLastMotion));
+            }
+        }
+
+        ev.type = RE_ET_CHANGED;
         xQueueSendToBack(_queue, &ev, 0);
     }
 }
@@ -177,7 +228,13 @@ esp_err_t rotary_encoder_add(rotary_encoder_t *re)
     gpio_config_t io_conf;
     memset(&io_conf, 0, sizeof(gpio_config_t));
     io_conf.mode = GPIO_MODE_INPUT;
-    io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
+    if (BTN_PRESSED_LEVEL == 0) {
+        io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
+        io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    } else {
+        io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
+        io_conf.pull_down_en = GPIO_PULLDOWN_ENABLE;
+    }
     io_conf.intr_type = GPIO_INTR_DISABLE;
     io_conf.pin_bit_mask = GPIO_BIT(re->pin_a) | GPIO_BIT(re->pin_b);
     if (re->pin_btn < GPIO_NUM_MAX)
@@ -214,4 +271,19 @@ esp_err_t rotary_encoder_remove(rotary_encoder_t *re)
     ESP_LOGE(TAG, "Unknown encoder");
     xSemaphoreGive(mutex);
     return ESP_ERR_NOT_FOUND;
+}
+
+esp_err_t rotary_encoder_enable_acceleration(rotary_encoder_t *re, uint16_t coeff)
+{
+    CHECK_ARG(re);
+    re->acceleration.coeff = coeff;
+    re->acceleration.last_time = esp_timer_get_time();
+    return ESP_OK;
+}
+
+esp_err_t rotary_encoder_disable_acceleration(rotary_encoder_t *re)
+{
+    CHECK_ARG(re);
+    re->acceleration.coeff = 0;
+    return ESP_OK;
 }

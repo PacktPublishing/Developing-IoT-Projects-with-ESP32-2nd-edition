@@ -1,12 +1,40 @@
+/*
+ * Copyright (c) 2016 Bernhard Guillon <Bernhard.Guillon@begu.org>
+ * Copyright (c) 2018 Ruslan V. Uss <unclerus@gmail.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of itscontributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 /**
  * @file ms5611.c
  *
- * ESP-IDF driver for barometic pressure sensor MS5611-01BA03
+ * ESP-IDF driver for barometric pressure sensor MS5611-01BA03
  *
  * Ported from esp-open-rtos
  *
- * Copyright (C) 2016 Bernhard Guillon <Bernhard.Guillon@begu.org>\n
- * Copyright (C) 2018 Ruslan V. Uss <unclerus@gmail.com>
+ * Copyright (c) 2016 Bernhard Guillon <Bernhard.Guillon@begu.org>\n
+ * Copyright (c) 2018 Ruslan V. Uss <unclerus@gmail.com>
  *
  * BSD Licensed as described in the file LICENSE
  */
@@ -19,6 +47,7 @@
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include <ets_sys.h>
 
 #define I2C_FREQ_HZ 400000 // 400 kHz
 
@@ -37,7 +66,7 @@
 #define CHECK(x) do { esp_err_t __; if ((__ = x) != ESP_OK) return __; } while (0)
 #define CHECK_ARG(VAL) do { if (!(VAL)) return ESP_ERR_INVALID_ARG; } while (0)
 
-static const char *TAG = "MS5611";
+static const char *TAG = "ms5611";
 
 static inline esp_err_t send_command(ms5611_t *dev, uint8_t cmd)
 {
@@ -184,14 +213,14 @@ esp_err_t ms5611_get_sensor_data(ms5611_t *dev, int32_t *pressure, float *temper
 
     // dT = D2 - T_ref = D2 - C5 * 2^8
     int32_t dt = raw_temperature - ((int32_t)dev->config_data.t_ref << 8);
-    // Actual temerature (-40...85C with 0.01 resulution)
+    // Actual temperature (-40...85C with 0.01 resolution)
     // TEMP = 20C +dT * TEMPSENSE =2000 + dT * C6 / 2^23
     int64_t temp = (2000 + (int64_t)dt * dev->config_data.tempsens / 8388608);
     // Offset at actual temperature
     // OFF=OFF_t1 + TCO * dT = OFF_t1(C2) * 2^16 + (C4*dT)/2^7
     int64_t off = (int64_t)((int64_t)dev->config_data.off * 65536)
         + (((int64_t)dev->config_data.tco * dt) / 128);
-    // Senisitivity at actual temperature
+    // Sensitivity at actual temperature
     // SENS=SENS_t1 + TCS *dT = SENS_t1(C1) *2^15 + (TCS(C3) *dT)/2^8
     int64_t sens = (int64_t)(((int64_t)dev->config_data.sens) * 32768)
         + (((int64_t)dev->config_data.tcs * dt) / 256);

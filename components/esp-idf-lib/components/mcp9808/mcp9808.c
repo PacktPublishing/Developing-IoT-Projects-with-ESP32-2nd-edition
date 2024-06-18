@@ -1,9 +1,36 @@
+/*
+ * Copyright (c) 2020 Ruslan V. Uss <unclerus@gmail.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of itscontributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 /**
  * @file mcp9808.c
  *
  * ESP-IDF driver for MCP9808 Digital Temperature Sensor
  *
- * Copyright (C) 2020 Ruslan V. Uss <unclerus@gmail.com>
+ * Copyright (c) 2020 Ruslan V. Uss <unclerus@gmail.com>
  *
  * BSD Licensed as described in the file LICENSE
  */
@@ -13,7 +40,7 @@
 #include <math.h>
 #include <esp_log.h>
 
-static const char *TAG = "MCP9808";
+static const char *TAG = "mcp9808";
 
 #define I2C_FREQ_HZ 400000 // 400 kHz
 
@@ -153,14 +180,14 @@ esp_err_t mcp9808_init(i2c_dev_t *dev)
     CHECK(read_reg_16(dev, REG_MANUF, &v));
     if (v != MANUFACTURER_ID)
     {
-        ESP_LOGE(TAG, "Inavlid manufacturer ID 0x%04x", v);
+        ESP_LOGE(TAG, "Invalid manufacturer ID 0x%04x", v);
         return ESP_ERR_INVALID_RESPONSE;
     }
 
     CHECK(read_reg_16(dev, REG_ID, &v));
     if ((v >> 8) != DEVICE_ID)
     {
-        ESP_LOGE(TAG, "Inavlid device ID 0x%02x", v);
+        ESP_LOGE(TAG, "Invalid device ID 0x%02x", v);
         return ESP_ERR_INVALID_RESPONSE;
     }
     ESP_LOGD(TAG, "Device revision: 0x%02x", v & 0xff);

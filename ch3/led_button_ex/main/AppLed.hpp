@@ -8,7 +8,7 @@ namespace app
     public:
         void init(void)
         {
-            gpio_config_t config{GPIO_SEL_39,
+            gpio_config_t config{(1ull<<39),
                                  GPIO_MODE_OUTPUT,
                                  GPIO_PULLUP_DISABLE,
                                  GPIO_PULLDOWN_DISABLE,

@@ -22,7 +22,7 @@ namespace app
 
         void init(void)
         {
-            gpio_config_t config{GPIO_SEL_38,
+            gpio_config_t config{(1ull<<38),
                                  GPIO_MODE_INPUT,
                                  GPIO_PULLUP_ENABLE,
                                  GPIO_PULLDOWN_DISABLE,

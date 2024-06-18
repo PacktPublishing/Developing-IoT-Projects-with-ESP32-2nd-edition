@@ -17,7 +17,7 @@ OS: Linux x64 6.5.0-35-generic
 
 # Installing ESP-IDF
 
-There are several ways of installing ESP-IDF as explained in the book. You can use the ESP-IDF Extension for Visual Studio Code in the examples. See the installation tutorial here: https://github.com/espressif/vscode-esp-idf-extension/blob/master/docs/tutorial/install.md
+There are several ways of installing ESP-IDF as explained in the book. You can use the ESP-IDF Extension for Visual Studio Code to develop the examples. See the installation tutorial here: https://github.com/espressif/vscode-esp-idf-extension/blob/master/docs/tutorial/install.md
 
 The IDF version is **5.2.2**
 

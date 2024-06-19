@@ -1,0 +1,23 @@
+dependencies:
+  button:
+    public: true
+    version: '>=2.4'
+  esp_codec_dev:
+    public: true
+    version: ^1.0.3
+  espressif/esp_lvgl_port:
+    public: true
+    version: ^2
+  idf:
+    version: '>=4.4.5'
+description: Board Support Package (BSP) for ESP32-S3-BOX-Lite
+repository: git://github.com/espressif/esp-bsp.git
+repository_info:
+  commit_sha: 8d403e718188a25811e869fdafe613b36dd09007
+  path: bsp/esp-box-lite
+tags:
+- bsp
+targets:
+- esp32s3
+url: https://github.com/espressif/esp-bsp/tree/master/bsp/esp-box-lite
+version: 2.1.0

@@ -83,6 +83,22 @@ static const button_config_t bsp_button_config[BSP_BUTTON_NUM] = {
         .custom_button_config.button_custom_deinit = NULL,
         .custom_button_config.active_level = 1,
         .custom_button_config.priv = (void *) BSP_BUTTON_MAIN,
+    },
+    // hardware button pad
+    {
+        .type = BUTTON_TYPE_GPIO,
+        .gpio_button_config.gpio_num = GPIO_NUM_12,
+        .gpio_button_config.active_level = 0,
+    },
+    {
+        .type = BUTTON_TYPE_GPIO,
+        .gpio_button_config.gpio_num = GPIO_NUM_11,
+        .gpio_button_config.active_level = 0,
+    },
+    {
+        .type = BUTTON_TYPE_GPIO,
+        .gpio_button_config.gpio_num = GPIO_NUM_14,
+        .gpio_button_config.active_level = 0,
     }
 };
 

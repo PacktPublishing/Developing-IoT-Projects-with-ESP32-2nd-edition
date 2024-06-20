@@ -126,6 +126,10 @@ typedef enum {
     BSP_BUTTON_CONFIG = 0,
     BSP_BUTTON_MUTE,
     BSP_BUTTON_MAIN,
+    // hardware button pad
+    BOARD_BTN_ID_PREV,
+    BOARD_BTN_ID_ENTER,
+    BOARD_BTN_ID_NEXT,
     BSP_BUTTON_NUM
 } bsp_button_t;
 

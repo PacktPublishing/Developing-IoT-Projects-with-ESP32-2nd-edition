@@ -12,9 +12,9 @@ namespace
     app::AppButton m_app_btn;
 
     esp_err_t audio_mute_function(AUDIO_PLAYER_MUTE_SETTING setting);
-    void play_music(void *data);
-    void volume_up(void *data);
-    void volume_down(void *data);
+    void play_music(void *handle, void *data);
+    void volume_up(void *handle, void *data);
+    void volume_down(void *handle, void *data);
 }
 
 extern "C" void app_main(void)
@@ -32,17 +32,18 @@ extern "C" void app_main(void)
 
 namespace
 {
-    void play_music(void *data)
+    
+    void play_music(void *handle, void *data)
     {
         m_app_audio.play();
     }
 
-    void volume_up(void *data)
+    void volume_up(void *handle, void *data)
     {
         m_app_audio.volume_up();
     }
 
-    void volume_down(void *data)
+    void volume_down(void *handle, void *data)
     {
         m_app_audio.volume_down();
     }

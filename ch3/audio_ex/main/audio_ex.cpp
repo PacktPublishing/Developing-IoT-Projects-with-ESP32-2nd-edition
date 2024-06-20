@@ -22,8 +22,6 @@ extern "C" void app_main(void)
     bsp_i2c_init();
     bsp_spiffs_mount();
     bsp_board_init();
-    // bsp_board_power_ctrl(POWER_MODULE_AUDIO, true);
-    // bsp_spiffs_init("storage", "/spiffs", 2);
 
     m_app_settings.init();
     m_app_audio.init(audio_mute_function);

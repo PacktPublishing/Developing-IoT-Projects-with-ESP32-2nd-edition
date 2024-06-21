@@ -3,12 +3,10 @@
 #include <mutex>
 #include <vector>
 
-#include "bsp_lcd.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "lvgl/lvgl.h"
-#include "lv_port/lv_port.h"
+#include "lvgl.h"
 #include "ui.h"
 #include "AppButton.hpp"
 
@@ -18,17 +16,6 @@ namespace app
     {
     private:
         static std::mutex m_ui_access;
-        static void lvglTask(void *param)
-        {
-            while (true)
-            {
-                {
-                    std::lock_guard<std::mutex> lock(m_ui_access);
-                    lv_task_handler();
-                }
-                vTaskDelay(pdMS_TO_TICKS(10));
-            }
-        }
 
         std::vector<lv_obj_t *> m_screens;
         int m_scr_pos;
@@ -36,16 +23,12 @@ namespace app
     public:
         void init(void)
         {
-            lv_port_init();
             ui_init();
             m_scr_pos = 0;
             m_screens.push_back(ui_Screen1);
             m_screens.push_back(ui_Screen2);
             m_screens.push_back(ui_Screen3);
             m_screens.push_back(ui_Screen4);
-            xTaskCreatePinnedToCore(lvglTask, "lvgl", 6 * 1024, nullptr, 3, nullptr, 0);
-
-            bsp_lcd_set_backlight(true);
         }
 
         void buttonEventHandler(sAppButtonEvent &btn_evt)
@@ -53,17 +36,17 @@ namespace app
             std::lock_guard<std::mutex> lock(m_ui_access);
             switch (btn_evt.btn_id)
             {
-            case board_btn_id_t::BOARD_BTN_ID_PREV:
+            case bsp_button_t::BOARD_BTN_ID_PREV:
                 m_scr_pos = (m_scr_pos - 1) % m_screens.size();
                 lv_scr_load(m_screens[m_scr_pos]);
                 break;
 
-            case board_btn_id_t::BOARD_BTN_ID_NEXT:
+            case bsp_button_t::BOARD_BTN_ID_NEXT:
                 m_scr_pos = (m_scr_pos + 1) % m_screens.size();
                 lv_scr_load(m_screens[m_scr_pos]);
                 break;
 
-            case board_btn_id_t::BOARD_BTN_ID_ENTER:
+            case bsp_button_t::BOARD_BTN_ID_ENTER:
             {
                 switch (m_scr_pos)
                 {

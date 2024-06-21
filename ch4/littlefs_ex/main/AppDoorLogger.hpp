@@ -6,7 +6,6 @@
 
 #include "esp_log.h"
 #include "bsp_board.h"
-#include "bsp_btn.h"
 #include "esp_littlefs.h"
 
 namespace app
@@ -24,22 +23,16 @@ namespace app
         };
         eDoorState m_door_state;
 
-        static AppDoorLogger &getObject(void *btn_ptr)
+        static void doorOpened(void *btn_ptr, void *user_data)
         {
-            button_dev_t *btn_dev = reinterpret_cast<button_dev_t *>(btn_ptr);
-            return *(reinterpret_cast<AppDoorLogger *>(btn_dev->cb_user_data));
-        }
-
-        static void doorOpened(void *btn_ptr)
-        {
-            AppDoorLogger &obj = getObject(btn_ptr);
+            AppDoorLogger &obj = *(reinterpret_cast<AppDoorLogger *>(user_data));
             obj.m_door_state = eDoorState::OPENED;
             obj.log();
         }
 
-        static void doorClosed(void *btn_ptr)
+        static void doorClosed(void *btn_ptr, void *user_data)
         {
-            AppDoorLogger &obj = getObject(btn_ptr);
+            AppDoorLogger &obj = *(reinterpret_cast<AppDoorLogger *>(user_data));
             obj.m_door_state = eDoorState::CLOSED;
             obj.log();
         }
@@ -51,7 +44,7 @@ namespace app
             log_file << (m_door_state == eDoorState::OPENED ? "opened" : "closed") << "\n";
         }
 
-        static void print(void *data)
+        static void print(void *data, void *user_data)
         {
             std::ifstream log_file{FILENAME};
             std::string line1;
@@ -65,9 +58,10 @@ namespace app
     public:
         void init(void)
         {
+            bsp_i2c_init();
             bsp_board_init();
-            bsp_btn_register_callback(BOARD_BTN_ID_PREV, BUTTON_PRESS_DOWN, AppDoorLogger::doorOpened, reinterpret_cast<void *>(this));
-            bsp_btn_register_callback(BOARD_BTN_ID_PREV, BUTTON_PRESS_UP, AppDoorLogger::doorClosed, reinterpret_cast<void *>(this));
+            bsp_btn_register_callback(BOARD_BTN_ID_PREV, BUTTON_PRESS_DOWN, AppDoorLogger::doorOpened, this);
+            bsp_btn_register_callback(BOARD_BTN_ID_PREV, BUTTON_PRESS_UP, AppDoorLogger::doorClosed, this);
             bsp_btn_register_callback(BOARD_BTN_ID_ENTER, BUTTON_PRESS_DOWN, AppDoorLogger::print, nullptr);
 
             esp_vfs_littlefs_conf_t conf = {

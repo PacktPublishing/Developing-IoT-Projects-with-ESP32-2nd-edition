@@ -8,7 +8,6 @@
 #include "freertos/queue.h"
 
 #include "esp_err.h"
-#include "bsp_codec.h"
 #include "bsp_board.h"
 #include "bsp_storage.h"
 #include "audio_player.h"
@@ -48,12 +47,15 @@ namespace app
         void init(audio_player_mute_fn fn)
         {
 
-            audio_player_config_t config = {.port = I2S_NUM_0,
-                                            .mute_fn = fn,
+            audio_player_config_t config = {.mute_fn = fn,
+                                            .clk_set_fn = bsp_codec_set_fs,
+                                            .write_fn = bsp_i2s_write,
                                             .priority = 1};
             audio_player_new(config);
             audio_player_callback_register(audio_player_callback, this);
-            bsp_codec_set_voice_volume(50);
+
+            int audio_resp;
+            bsp_codec_volume_set(50, &audio_resp);
 
             m_event_queue = xQueueCreate(10, sizeof(app::eBtnEvent));
         }
@@ -66,13 +68,14 @@ namespace app
             m_muted = toggle ? !m_muted : m;
             if (m_muted)
             {
-                bsp_codec_set_mute(true);
+                bsp_codec_mute_set(true);
             }
             else
             {
-                bsp_codec_set_mute(false);
-                bsp_codec_set_voice_volume(m_vol);
-                val = m_vol;
+                bsp_codec_mute_set(false);
+                int audio_resp;
+                bsp_codec_volume_set(m_vol, &audio_resp);
+                val = ((uint8_t)audio_resp) % 100;
             }
             return val;
         }
@@ -100,7 +103,8 @@ namespace app
             if (m_vol < 100)
             {
                 m_vol += 10;
-                bsp_codec_set_voice_volume(m_vol);
+                int audio_resp;
+                bsp_codec_volume_set(m_vol, &audio_resp);
             }
             return m_vol;
         }
@@ -110,7 +114,8 @@ namespace app
             if (m_vol > 0)
             {
                 m_vol -= 10;
-                bsp_codec_set_voice_volume(m_vol);
+                int audio_resp;
+                bsp_codec_volume_set(m_vol, &audio_resp);
             }
             return m_vol;
         }

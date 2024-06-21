@@ -3,12 +3,10 @@
 #include <mutex>
 #include <string>
 
-#include "bsp_lcd.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "lvgl/lvgl.h"
-#include "lv_port/lv_port.h"
+#include "lvgl.h"
 #include "ui.h"
 
 #include "AppButton.hpp"
@@ -26,17 +24,7 @@ namespace app
     {
     private:
         static std::mutex m_ui_access;
-        static void lvglTask(void *param)
-        {
-            while (true)
-            {
-                {
-                    std::lock_guard<std::mutex> lock(m_ui_access);
-                    lv_task_handler();
-                }
-                vTaskDelay(pdMS_TO_TICKS(10));
-            }
-        }
+       
 
         bool m_playlist_active;
         app::AppAudio *m_app_audio;
@@ -55,7 +43,6 @@ namespace app
             m_app_button = button;
             m_app_audio = audio;
 
-            lv_port_init();
             ui_init();
             m_nav.init();
 
@@ -66,9 +53,6 @@ namespace app
 
             update(m_nav.getCurrent(), false);
 
-            bsp_lcd_set_backlight(true);
-
-            xTaskCreatePinnedToCore(lvglTask, "lvgl", 6 * 1024, nullptr, 3, nullptr, 0);
             xTaskCreate(buttonEventTask, "btn_evt", 3 * 1024, this, 3, nullptr);
             xTaskCreate(audioEventTask, "audio_evt", 3 * 1024, this, 3, nullptr);
         }

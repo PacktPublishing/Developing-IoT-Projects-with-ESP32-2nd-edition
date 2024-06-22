@@ -1,12 +1,12 @@
 #include "esp_log.h"
-#include "AppWifiSoftAp.hpp"
+#include "AppWifiBle.hpp"
 #include "AppRestServer.hpp"
 
 #define TAG "app"
 
 namespace
 {
-    app::AppWifiSoftAp app_wifi;
+    app::AppWifiBle app_wifi;
     app::AppRestServer rest_server;
 }
 

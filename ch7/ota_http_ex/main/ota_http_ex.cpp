@@ -1,5 +1,5 @@
 #include "esp_log.h"
-#include "AppWifiSoftAp.hpp"
+#include "AppWifiBle.hpp"
 #include "AppOtaClient.hpp"
 
 #include "freertos/FreeRTOS.h"
@@ -9,7 +9,7 @@
 
 namespace
 {
-    app::AppWifiSoftAp app_wifi;
+    app::AppWifiBle app_wifi;
     app::AppOtaClient ota_client;
 }
 

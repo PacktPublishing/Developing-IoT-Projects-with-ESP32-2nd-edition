@@ -45,16 +45,20 @@ namespace app
         void init(MqttEventCb_f cb)
         {
             m_event_cb = cb;
-            esp_mqtt_client_config_t mqtt_cfg = {
-                .host = CONFIG_MQTT_BROKER_IP,
-                .port = CONFIG_MQTT_PORT,
-                .client_id = m_sensor->getName().c_str(),
-                .username = MQTT_USER,
-                .password = MQTT_PWD};
+            esp_mqtt_client_config_t mqtt_cfg;
+            std::memset(&mqtt_cfg, 0, sizeof(mqtt_cfg));
+
+            mqtt_cfg.broker.address.uri = "mqtt://" CONFIG_MQTT_BROKER_IP;
+            mqtt_cfg.broker.address.port = CONFIG_MQTT_PORT;
+            mqtt_cfg.credentials.client_id = m_sensor->getName().c_str();
+            mqtt_cfg.credentials.username = MQTT_USER;
+            mqtt_cfg.credentials.authentication.password = MQTT_PWD;
             m_client = esp_mqtt_client_init(&mqtt_cfg);
             esp_mqtt_client_register_event(m_client, MQTT_EVENT_ANY, mqttEventHandler, this);
+
             xTaskCreate(publishSensorState, "publish", 4096, this, 5, &m_publish_handle);
             vTaskSuspend(m_publish_handle);
+
         }
 
         void start(void)

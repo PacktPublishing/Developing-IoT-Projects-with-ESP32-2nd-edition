@@ -1,5 +1,5 @@
 #include "esp_log.h"
-#include "AppWifiSoftAp.hpp"
+#include "AppWifiBle.hpp"
 #include "AppMqtt.hpp"
 #include "AppSensorDevkit.hpp"
 
@@ -7,7 +7,7 @@
 
 namespace
 {
-    app::AppWifiSoftAp app_wifi;
+    app::AppWifiBle app_wifi;
     app::AppSensorDevkit app_sensor;
     app::AppMqtt app_mqtt{&app_sensor};
 }
@@ -44,7 +44,7 @@ extern "C" void app_main(void)
     };
 
     app_sensor.init();
-    app_mqtt.init(mqtt_cb);
     app_wifi.init(wifi_connected, wifi_disconnected);
+    app_mqtt.init(mqtt_cb);
     app_wifi.connect();
 }

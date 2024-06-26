@@ -21,6 +21,7 @@
 #include <string.h>
 #include <esp_idf_lib_helpers.h>
 #include "onewire.h"
+#include "rom/ets_sys.h"
 
 #define ONEWIRE_SELECT_ROM 0x55
 #define ONEWIRE_SKIP_ROM   0xcc

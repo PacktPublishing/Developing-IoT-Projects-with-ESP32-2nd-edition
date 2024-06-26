@@ -2,13 +2,13 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include "AppWifiSoftAp.hpp"
+#include "AppWifiBle.hpp"
 #include "AppAwsClient.hpp"
 #include "AppSensorTemperature.hpp"
 
 namespace
 {
-    app::AppWifiSoftAp app_wifi;
+    app::AppWifiBle app_wifi;
     app::AppAwsClient app_client;
     app::AppSensorTemperature app_sensor;
 

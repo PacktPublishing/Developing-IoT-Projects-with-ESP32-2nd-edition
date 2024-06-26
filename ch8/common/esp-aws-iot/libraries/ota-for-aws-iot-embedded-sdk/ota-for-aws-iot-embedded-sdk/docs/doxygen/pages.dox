@@ -1,0 +1,362 @@
+/**
+@mainpage
+@anchor ota
+@brief AWS IoT Over-the-air Update Library.<br><br>
+
+AWS IoT Over-the-air Update library enables you to manage the notification of a newly available update, download the update, and perform cryptographic verification of the firmware update. Using the Over-the-air (OTA) client library, you can logically separate firmware updates from the application running on your devices. The Over-the-air (OTA) client library can share a network connection with the application, saving memory in resource-constrained devices. In addition, the OTA library lets you define application-specific logic for testing, committing, or rolling back a firmware update. The library supports different application protocols like Message Queuing Telemetry Transport (MQTT) and Hypertext Transfer Protocol (HTTP) and provides various configuration options you can fine tune depending on network type and conditions.
+
+The major functions that this library’s APIs provide are –
+
+- Register for notifications or poll for new update requests that are available.
+- Receive, parse and validate the update request.
+- Download and verify the file according to the information in the update request.
+- Run a self-test before activating the received update to ensure the functional validity of the update.
+- Update the status of the device.
+
+@see [Functions](@ref ota_functions) for more information.
+
+AWS services can be used with this library to manage various cloud related topics such as sending firmware updates, monitoring large numbers of devices across multiple regions, reducing the blast radius of faulty deployments, and verifying the security of updates.
+
+> **NOTE**: **Handling OTA and custom jobs in your application**  
+> If your application will process both OTA and custom types of jobs from AWS IoT, we recommend using the feature support for custom jobs in OTA library through the #OtaJobEventParseCustomJob event notification in the registered #OtaAppCallback_t callback.  
+> However, if your application chooses to use the [AWS IoT Jobs library](https://github.com/aws/Jobs-for-AWS-IoT-embedded-sdk) (for handling custom jobs) and the OTA library (for handling OTA jobs) to communicate with AWS IoT through a shared MQTT connection, we suggest that you keep the application logic that uses these libraries within a single task/thread.
+> As the OTA agent also makes calls to the AWS IoT Jobs service, keeping the use of libraries within the same thread context will avoid complexity of synchronizing communication with AWS IoT Jobs topics between multiple tasks/threads.
+> However, if you choose to use different tasks/threads for calling these libraries, please be aware that the OTA library will subscribe and configurably, unsubscribe from AWS IoT Jobs topics, and also attempt to send status updates for incoming non-OTA jobs, if your application configures the OTA library to handle custom jobs.
+
+
+@section ota_dependencies OTA Dependencies
+@dot "OTA Dependencies"
+digraph ota_dependencies
+{
+    node[shape=box, fontname=Helvetica, fontsize=10, style=filled];
+    edge[fontname=Helvetica, fontsize=10];
+
+    ota[label="OTA", fillcolor="#cc00ccff"];
+
+    subgraph
+    {
+        node[fillcolor="#aed8a9ff"];
+        mqtt[label="MQTT interface"];
+    }
+    subgraph
+    {
+        node[fillcolor="#aed8a9ff"];
+        rank = same;
+        http[label="HTTP interface"];
+    }
+    subgraph
+    {
+        node[fillcolor="#aed8a9ff"];
+        rank = same;
+        pal[label="PAL interface"];
+    }
+    subgraph
+    {
+        node[fillcolor="#aed8a9ff"];
+        rank = same;
+        os[label="OS interface"];
+    }
+    subgraph
+    {
+        node[fillcolor="#cc00ccff"];
+        rank = same;
+        cbor[label="tinyCBOR"];
+    }
+    subgraph
+    {
+        node[fillcolor="#cc00ccff"];
+        rank = same;
+        json[label="coreJSON"];
+    }
+
+    ota -> mqtt[style="dashed"];
+    ota -> http[label=" if data over http enabled", style="dashed"];
+    ota -> pal[style="dashed"];
+    ota -> os[style="dashed"];
+    ota -> cbor[label="For decoding data streams"];
+    ota -> json[label="For Job Parsing"];
+}
+@enddot
+
+Currently, the OTA library has the following direct dependencies:
+    - [coreJSON](https://github.com/FreeRTOS/coreJSON): To parse the JSON Job document received for the update.
+    - [tinyCBOR](https://github.com/intel/tinycbor.git): To decode the encoded data stream which contains the file blocks.
+
+@section ota_memory_requirements Memory Requirements
+@brief Memory requirements of the OTA library.
+
+@include{doc} size_table.md
+
+ */
+
+/**
+@page ota_design Design
+@brief Architecture of the OTA library.
+
+@image html ota_architecture.png
+
+@section ota_design_library_configs OTA Library Configurations
+
+The OTA library also provides various configuration options you can fine tune depending on network type and conditions. The library is provided with sensible default values for these configuration options. As these configuration settings are C pre-processor constant, they can be set with a `#define` in the config file (ota_config.h). It is recommended to review the configuration options and update as per use case and application requirement. Because they are compile-time constants, a library must be rebuilt if a configuration setting is changed.
+
+For more details on OTA configuration at @ref ota_config
+
+@section ota_design_library OTA Library
+
+The OTA library provides OTA Agent APIs for application development. The OTA library components consists of the OTA Agent task which contains the OTA state machine, AWS Jobs and Streaming service support over MQTT/HTTP protocol. The library defines interfaces for Platform Abstraction Layer (PAL), Operating System, MQTT, and HTTP to enable the user to work with 3rd party libraries and various devices.
+
+@subsection ota_design_agent_api OTA Agent API’s
+
+The OTA Agent APIs provides the programming interface to the application for OTA functionality like configuring the OTA Agent, controlling the OTA process and getting statistics. The implementation supports only one instance of the OTA Agent and attempts to start OTA Agent when it is already running will only reset the statistics.
+
+@subsection ota_design_pal OTA Platform Abstraction Layer
+
+The OTA platform abstraction layer provides APIs for the portable platform specific functionality of the OTA library. This includes the platform specific file storage , certificate storage , crypto verification, bootloader flags and other platform drivers. Example of OTA Pal port is for the FreeRTOS Windows Simulator.
+
+@see [Porting documentation for PAL](@ref ota_porting_pal) for more information.
+
+@subsection ota_design_os OTA OS Functional Abstraction
+
+OTA Library can be ported to run in a variety of embedded C–based environments (e.g. real-time OS, embedded Linux). OTA Library uses queue for managing events in a state machine and timers for enabling timeouts for self test and file download. The memory allocation wrapper functions should be provided with signature similar to the standard c library malloc and free functions.
+
+@image html ota_design_os.png
+
+@see [Porting documentation for OS](@ref ota_porting_os) for more information.
+
+@subsection ota_design_mqtt OTA MQTT interface
+The OTA library can be used with any 3rd party MQTT library. To enable this a set of function pointers for MQTT functionality (Publish, Subscribe and Unsubscribe) are be used within OTA library code. These function pointers are depicted as MQTT Interface.
+
+@see [Porting documentation for MQTT](@ref ota_porting_mqtt) for more information.
+
+@subsection ota_design_http OTA HTTP interface
+The OTA library can be used with any 3rd party HTTP library. To enable this a set of function pointers for HTTP functionality (Init, RequestData and DeInit) are be used within OTA library code. These function pointers are depicted as HTTP Interface.
+
+@see [Porting documentation for HTTP](@ref ota_porting_http) for more information.
+
+@subsection ota_design_memory OTA Memory Allocation
+OTA Library requires allocation memory for storing the Job and file decoding and download. OTA library uses user buffer provided by OTA Demo for storing data, but if those are not sufficient then OTA library will try to allocate dynamically using the memory abstraction functions defined by the OS Functional layer.
+
+@subsection ota_design_agent_task OTA Agent Task
+
+The OTA Agent task is started when the OTA Library is initialized. The core functionality is implemented in the task as a state machine and can receive internal/external events. Depending on the type of event and the state , event handlers are called which can result in state transitions as defined in the transition table.
+
+@see [OTA Agent Task](@ref ota_eventprocessingtask_function) for more information.
+
+@section ota_design_job_parser Job Parser
+
+The OTA Library uses AWS IoT jobs service and has an inbuilt job parsing functionality. AWS IoT Jobs service defines a set of remote operations that are sent to and executed on one or more devices connected to AWS IoT. Example of such operation can be updating the firmware, certificate rotation etc. The jobs service also provide features like job rollout,  where you can specify how quickly targets are notified of a pending job execution. This allows to create a staged rollout to better manage updates, reboots, and other operations. Other features like abort, timeout etc are also provided. Some of the important fields that a job document can contain are -
+
+1. Protocol to download the file, ex MQTT, HTTP
+2. File path for the update file to be stored on the device.
+3. File size in bytes
+4. File Id , default is 0
+5. Code signing certificate path on device
+6. Stream Id ( if MQTT protocol is selected for download )
+7. Pre-signed S3 URL ( if HTTP protocol is selected for download )
+8. Code signature
+9. Code signature type
+
+More about the AWS IoT Jobs here (https://docs.aws.amazon.com/iot/latest/developerguide/iot-jobs.html).
+
+@section ota_design_control_data_protocols OTA Control and Data Protocols
+
+The OTA Library operations with respect to the AWS IoT Job service can be divided into control ( Job notification, status updates, abort etc.) and data (file download). The current implementation supports MQTT protocol for control as well as data operations. HTTP is supported for data operations only i.e downloading the update file from a pre-signed URL shared in the job document. The file download protocol is selected when creating the OTA job and the OTA configuration on device has preferred protocol in case multiple protocols are selected.
+
+@note HTTPS will only be used for file download from S3 pre-signed url , for control messages to the AWS cloud service it will use MQTT.
+
+*/
+
+
+/**
+@page ota_functions Functions
+@brief API functions of the OTA library:<br><br>
+@subpage ota_init_function <br>
+@subpage ota_shutdown_function <br>
+@subpage ota_getstate_function <br>
+@subpage ota_activatenewimage_function <br>
+@subpage ota_setimagestate_function <br>
+@subpage ota_getimagestate_function <br>
+@subpage ota_checkforupdate_function <br>
+@subpage ota_suspend_function <br>
+@subpage ota_resume_function <br>
+@subpage ota_signalevent_function <br>
+@subpage ota_eventprocessingtask_function <br>
+@subpage ota_getstatistics_function <br>
+@subpage ota_err_strerror_function <br>
+@subpage ota_jobparse_strerror_function <br>
+@subpage ota_palstatus_strerror_function <br>
+@subpage ota_osstatus_strerror_function <br>
+
+@page ota_init_function OTA_Init
+@snippet ota.h declare_ota_init
+@copydoc OTA_Init
+
+@page ota_shutdown_function OTA_Shutdown
+@snippet ota.h declare_ota_shutdown
+@copydoc OTA_Shutdown
+
+@page ota_getstate_function OTA_GetState
+@snippet ota.h declare_ota_getstate
+@copydoc OTA_GetState
+
+@page ota_activatenewimage_function OTA_ActivateNewImage
+@snippet ota.h declare_ota_activatenewimage
+@copydoc OTA_ActivateNewImage
+
+@page ota_setimagestate_function OTA_SetImageState
+@snippet ota.h declare_ota_setimagestate
+@copydoc OTA_SetImageState
+
+@page ota_getimagestate_function OTA_GetImageState
+@snippet ota.h declare_ota_getimagestate
+@copydoc OTA_GetImageState
+
+@page ota_checkforupdate_function OTA_CheckForUpdate
+@snippet ota.h declare_ota_checkforupdate
+@copydoc OTA_CheckForUpdate
+
+@page ota_suspend_function OTA_Suspend
+@snippet ota.h declare_ota_suspend
+@copydoc OTA_Suspend
+
+@page ota_resume_function OTA_Resume
+@snippet ota.h declare_ota_resume
+@copydoc OTA_Resume
+
+@page ota_signalevent_function OTA_SignalEvent
+@snippet ota.h declare_ota_signalevent
+@copydoc OTA_SignalEvent
+
+@page ota_eventprocessingtask_function OTA_EventProcessingTask
+@snippet ota.h declare_ota_eventprocessingtask
+@copydoc OTA_EventProcessingTask
+
+@page ota_getstatistics_function OTA_GetStatistics
+@snippet ota.h declare_ota_getstatistics
+@copydoc OTA_GetStatistics
+
+@page ota_err_strerror_function OTA_Err_strerror
+@snippet ota.h declare_ota_err_strerror
+@copydoc OTA_Err_strerror
+
+@page ota_jobparse_strerror_function OTA_JobParse_strerror
+@snippet ota.h declare_ota_jobparse_strerror
+@copydoc OTA_JobParse_strerror
+
+@page ota_palstatus_strerror_function OTA_PalStatus_strerror
+@snippet ota.h declare_ota_palstatus_strerror
+@copydoc OTA_PalStatus_strerror
+
+@page ota_osstatus_strerror_function OTA_OsStatus_strerror
+@snippet ota.h declare_ota_osstatus_strerror
+@copydoc OTA_OsStatus_strerror
+*/
+
+/**
+@page ota_config Configurations
+@brief Configurations of the OTA Library.
+<!-- @par configpagestyle allows the @section titles to be styled according to style.css -->
+@par configpagestyle
+
+Some configuration settings are C pre-processor constants, and some are function-like macros for logging. They can be set with a `#define` in the config file (**ota_config.h**) or by using a compiler option such as -D in gcc.
+
+@section OTA_DO_NOT_USE_CUSTOM_CONFIG
+@copydoc OTA_DO_NOT_USE_CUSTOM_CONFIG
+
+@section otaconfigSTACK_SIZE
+@copydoc otaconfigSTACK_SIZE
+
+@section otaconfigAGENT_PRIORITY
+@copydoc otaconfigAGENT_PRIORITY
+
+@section otaconfigLOG2_FILE_BLOCK_SIZE
+@copydoc otaconfigLOG2_FILE_BLOCK_SIZE
+
+@section otaconfigMAX_NUM_BLOCKS_REQUEST
+@copydoc otaconfigMAX_NUM_BLOCKS_REQUEST
+
+Following two diagrams compare otaconfigLOG2_FILE_BLOCK_SIZE set to 10 (1 KB) and 12 (4 KB) with otaconfigMAX_NUM_BLOCKS_REQUEST set to maximum i.e 128 and 32 respectively.
+
+<b>otaconfigLOG2_FILE_BLOCK_SIZE is 10 ( 1KB )</b><br>
+<b>otaconfigMAX_NUM_BLOCKS_REQUEST is 128</b>
+
+@image html ota_config_block_size_10.png
+
+<b>otaconfigLOG2_FILE_BLOCK_SIZE is 12 ( 4KB )</b><br>
+<b>otaconfigMAX_NUM_BLOCKS_REQUEST is 32</b>
+
+@image html ota_config_block_size_12.png
+
+@section otaconfigSELF_TEST_RESPONSE_WAIT_MS
+@copydoc otaconfigSELF_TEST_RESPONSE_WAIT_MS
+
+@section otaconfigFILE_REQUEST_WAIT_MS
+@copydoc otaconfigFILE_REQUEST_WAIT_MS
+
+@section otaconfigMAX_THINGNAME_LEN
+@copydoc otaconfigMAX_THINGNAME_LEN
+
+@section otaconfigMAX_NUM_REQUEST_MOMENTUM
+@copydoc otaconfigMAX_NUM_REQUEST_MOMENTUM
+
+@section otaconfigMAX_NUM_OTA_DATA_BUFFERS
+@copydoc otaconfigMAX_NUM_OTA_DATA_BUFFERS
+
+@section otaconfigOTA_UPDATE_STATUS_FREQUENCY
+@copydoc otaconfigOTA_UPDATE_STATUS_FREQUENCY
+
+@section otaconfigAllowDowngrade
+@copydoc otaconfigAllowDowngrade
+
+@section configENABLED_CONTROL_PROTOCOL
+@copydoc configENABLED_CONTROL_PROTOCOL
+
+@section configENABLED_DATA_PROTOCOLS
+@copydoc configENABLED_DATA_PROTOCOLS
+
+@section configOTA_PRIMARY_DATA_PROTOCOL
+@copydoc configOTA_PRIMARY_DATA_PROTOCOL
+
+@section ota_logerror LogError
+@copydoc LogError
+
+@section ota_logwarn LogWarn
+@copydoc LogWarn
+
+@section ota_loginfo LogInfo
+@copydoc LogInfo
+
+@section ota_logdebug LogDebug
+@copydoc LogDebug
+*/
+
+
+/**
+@defgroup ota_enum_types Enumerated Types
+@brief Enumerated types of the OTA library
+*/
+
+/**
+@defgroup ota_callback_types Callback Types
+@brief Callback function pointer types of the OTA library
+*/
+
+/**
+@defgroup ota_struct_types Parameter Structures
+@brief Structures passed as parameters to [OTA library functions](@ref ota_functions)
+
+These structures are passed as parameters to library functions. Documentation for these structures will state the functions associated with each parameter structure and the purpose of each member.
+*/
+
+/**
+@defgroup ota_basic_types Basic Types
+@brief Primitive types of the OTA library.
+*/
+
+/**
+@defgroup ota_constants Constants
+@brief Constants defined in the OTA library
+*/
+
+
+*/

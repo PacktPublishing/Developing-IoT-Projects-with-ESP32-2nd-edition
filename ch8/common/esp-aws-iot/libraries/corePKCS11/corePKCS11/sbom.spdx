@@ -1,0 +1,94 @@
+SPDXVersion: SPDX-2.2
+DataLicense: CC0-1.0
+SPDXID: SPDXRef-DOCUMENT
+DocumentName: corePKCS11
+DocumentNamespace: https://github.com/FreeRTOS/corePKCS11/blob/v3.5.0/sbom.spdx
+Creator: Amazon Web Services
+Created: 2022-10-14T15:54:22Z
+CreatorComment: NOASSERTION
+DocumentComment: NOASSERTION
+
+PackageName: corePKCS11
+SPDXID: SPDXRef-Package-corePKCS11
+PackageVersion: v3.5.0
+PackageDownloadLocation: https://github.com/FreeRTOS/corePKCS11/tree/v3.5.0
+PackageLicenseConcluded: MIT
+FilesAnalyzed: True
+PackageVerificationCode: 6259376bd8971204052834047326e62d6ae6fb20
+PackageCopyrightText: NOASSERTION
+PackageSummary: NOASSERTION
+PackageDescription: Software implementation of the PKCS #11 standard.
+
+FileName: ./core_pkcs11.c
+SPDXID: SPDXRef-File-core_pkcs11.c
+FileChecksum: SHA1: a9486f28853cada2e4ab7e49d50ca4eac359a81d
+LicenseConcluded: MIT
+FileCopyrightText: NOASSERTION
+FileComment: NOASSERTION
+
+FileName: ./core_pki_utils.c
+SPDXID: SPDXRef-File-core_pki_utils.c
+FileChecksum: SHA1: 178cc279f757b278ef685b768f686d13d7ea8cd2
+LicenseConcluded: MIT
+FileCopyrightText: NOASSERTION
+FileComment: NOASSERTION
+
+FileName: ./portable/mbedtls/core_pkcs11_mbedtls.c
+SPDXID: SPDXRef-File-portable-mbedtls-core_pkcs11_mbedtls.c
+FileChecksum: SHA1: 3e3d677ebe9a1b21f2a4b40591f2ab7897720e2c
+LicenseConcluded: MIT
+FileCopyrightText: NOASSERTION
+FileComment: NOASSERTION
+
+FileName: ./portable/os/core_pkcs11_pal_utils.c
+SPDXID: SPDXRef-File-portable-os-core_pkcs11_pal_utils.c
+FileChecksum: SHA1: ec9ea2bc5e65c83c1125fb218aa82ae7d54f3b03
+LicenseConcluded: MIT
+FileCopyrightText: NOASSERTION
+FileComment: NOASSERTION
+
+FileName: ./portable/os/posix/core_pkcs11_pal.c
+SPDXID: SPDXRef-File-portable-os-posix-core_pkcs11_pal.c
+FileChecksum: SHA1: 3baed3587f72c6ea54b45618734d406f1329cf82
+LicenseConcluded: MIT
+FileCopyrightText: NOASSERTION
+FileComment: NOASSERTION
+
+FileName: ./portable/os/freertos_winsim/core_pkcs11_pal.c
+SPDXID: SPDXRef-File-portable-os-freertos_winsim-core_pkcs11_pal.c
+FileChecksum: SHA1: fe6b5d3c3a77355d029ded61d24d240bebe3646a
+LicenseConcluded: MIT
+FileCopyrightText: NOASSERTION
+FileComment: NOASSERTION
+
+FileName: ./dependency/3rdparty/mbedtls_utils/mbedtls_utils.c
+SPDXID: SPDXRef-File-dependency-3rdparty-mbedtls_utils-mbedtls_utils.c
+FileChecksum: SHA1: 535d7c8cba9511c3ae72d41bf3c9f4d2f6e49af8
+LicenseConcluded: MIT
+FileCopyrightText: NOASSERTION
+FileComment: NOASSERTION
+
+PackageName: mbedtls
+SPDXID: SPDXRef-Package-mbedtls
+PackageVersion: v2.28.0
+PackageDownloadLocation: https://github.com/ARMmbed/mbedtls.git
+PackageLicenseConcluded: Apache-2.0
+FilesAnalyzed: True
+PackageVerificationCode: da39a3ee5e6b4b0d3255bfef95601890afd80709
+PackageCopyrightText: NOASSERTION
+PackageSummary: NOASSERTION
+PackageDescription: NOASSERTION
+
+PackageName: pkcs11
+SPDXID: SPDXRef-Package-pkcs11
+PackageVersion: v2.40_errata01
+PackageDownloadLocation: https://github.com/amazon-freertos/pkcs11.git
+PackageLicenseConcluded: OASIS-IPR
+FilesAnalyzed: True
+PackageVerificationCode: da39a3ee5e6b4b0d3255bfef95601890afd80709
+PackageCopyrightText: NOASSERTION
+PackageSummary: NOASSERTION
+PackageDescription: NOASSERTION
+
+Relationship: SPDXRef-Package-corePKCS11 DEPENDS_ON SPDXRef-Package-mbedtls
+Relationship: SPDXRef-Package-corePKCS11 DEPENDS_ON SPDXRef-Package-pkcs11

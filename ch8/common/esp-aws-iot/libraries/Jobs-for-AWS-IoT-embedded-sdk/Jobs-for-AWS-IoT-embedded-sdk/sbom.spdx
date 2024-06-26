@@ -1,0 +1,29 @@
+SPDXVersion: SPDX-2.2
+DataLicense: CC0-1.0
+SPDXID: SPDXRef-DOCUMENT
+DocumentName: Jobs-for-AWS-IoT-embedded-sdk
+DocumentNamespace: https://github.com/FreeRTOS/Jobs-for-AWS-IoT-embedded-sdk/blob/v1.3.0/sbom.spdx
+Creator: Amazon Web Services
+Created: 2022-10-14T16:08:37Z
+CreatorComment: NOASSERTION
+DocumentComment: NOASSERTION
+
+PackageName: Jobs-for-AWS-IoT-embedded-sdk
+SPDXID: SPDXRef-Package-Jobs-for-AWS-IoT-embedded-sdk
+PackageVersion: v1.3.0
+PackageDownloadLocation: https://github.com/aws/Jobs-for-AWS-IoT-embedded-sdk/tree/v1.3.0
+PackageLicenseConcluded: MIT
+FilesAnalyzed: True
+PackageVerificationCode: 4873a34905f16cba19213ebc5d9f0f7b7c58daf5
+PackageCopyrightText: NOASSERTION
+PackageSummary: NOASSERTION
+PackageDescription: "Library for using the AWS IoT Jobs service on embedded devices.\n"
+
+
+FileName: ./jobs.c
+SPDXID: SPDXRef-File-jobs.c
+FileChecksum: SHA1: a125b0d7cd3c935a08bbb19f48215f99521c5c9e
+LicenseConcluded: MIT
+FileCopyrightText: NOASSERTION
+FileComment: NOASSERTION
+

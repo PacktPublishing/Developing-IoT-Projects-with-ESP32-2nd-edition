@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "freeFileContextMem",
+  "proof-root": "test/cbmc/proofs"
+}

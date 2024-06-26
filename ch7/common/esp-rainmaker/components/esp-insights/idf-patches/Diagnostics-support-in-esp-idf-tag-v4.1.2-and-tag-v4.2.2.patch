@@ -1,0 +1,579 @@
+Diagnostics support in ESP-IDF release v4.1.2 and release v4.2.2
+
+---
+ components/espcoredump/CMakeLists.txt         |   2 +-
+ .../espcoredump/include/esp_core_dump.h       |  48 ++++++-
+ .../xtensa/esp_core_dump_summary_extra_info.h |  36 ++++++
+ .../include_core_dump/esp_core_dump_port.h    |  28 ++++
+ .../include_core_dump/esp_core_dump_priv.h    |   4 +-
+ components/espcoredump/src/core_dump_elf.c    | 121 ++++++++++++++++++
+ components/espcoredump/src/core_dump_flash.c  | 117 +++++++++++++++++
+ components/espcoredump/src/core_dump_port.c   |  87 +++++++++++++
+ 8 files changed, 439 insertions(+), 4 deletions(-)
+ create mode 100644 components/espcoredump/include/port/xtensa/esp_core_dump_summary_extra_info.h
+
+diff --git a/components/espcoredump/CMakeLists.txt b/components/espcoredump/CMakeLists.txt
+index bce1224b03..8a3319c44e 100644
+--- a/components/espcoredump/CMakeLists.txt
++++ b/components/espcoredump/CMakeLists.txt
+@@ -3,7 +3,7 @@
+                             "src/core_dump_port.c"
+                             "src/core_dump_uart.c"
+                             "src/core_dump_elf.c"
+-                    INCLUDE_DIRS "include"
++                    INCLUDE_DIRS "include" "include/port/xtensa"
+                     PRIV_INCLUDE_DIRS "include_core_dump"
+                     LDFRAGMENTS linker.lf
+                     PRIV_REQUIRES spi_flash app_update mbedtls esp_rom soc)
+diff --git a/components/espcoredump/include/esp_core_dump.h b/components/espcoredump/include/esp_core_dump.h
+index 7d8d56c5fe..8343ddbd7e 100644
+--- a/components/espcoredump/include/esp_core_dump.h
++++ b/components/espcoredump/include/esp_core_dump.h
+@@ -17,6 +17,32 @@
+ #include <stddef.h>
+ #include "esp_err.h"
+ #include "freertos/xtensa_context.h"
++#include "esp_core_dump_summary_extra_info.h"
++
++#define APP_ELF_SHA256_SZ (CONFIG_APP_RETRIEVE_LEN_ELF_SHA + 1)
++
++/**
++ * @brief Backtrace information
++ */
++typedef struct {
++    uint32_t bt[16];    /*!< Backtrace (array of PC) */
++    uint32_t depth;     /*!< Number of backtrace entries */
++    bool corrupted;     /*!< Status flag for backtrace is corrupt or not */
++} esp_core_dump_bt_info_t;
++
++/**
++ * @brief Core dump summary, Most meaningful contents of the core dump
++ *        are accommodated in this structure
++ */
++typedef struct {
++    uint32_t exc_tcb;                           /*!< TCB pointer to the task causing exception */
++    char exc_task[16];                          /*!< Name of the task that caused exception */
++    uint32_t exc_pc;                            /*!< Program counter for exception */
++    esp_core_dump_bt_info_t exc_bt_info;        /*!< Backtrace information for task causing exception */
++    uint32_t core_dump_version;                 /*!< Core dump version */
++    uint8_t app_elf_sha256[APP_ELF_SHA256_SZ];  /*!< Crashing application's SHA256 sum as a string */
++    esp_core_dump_summary_extra_info_t ex_info; /*!< Architecture specific extra data */
++} esp_core_dump_summary_t;
+ 
+ /**************************************************************************************/
+ /******************************** EXCEPTION MODE API **********************************/
+@@ -58,7 +84,7 @@ void esp_core_dump_init(void);
+  * 4) Task's stack is placed after TCB data. Size is (STACK_END - STACK_TOP) bytes.
+  * 5) CRC is placed at the end of the data.
+  */
+-void esp_core_dump_to_flash(XtExcFrame *frame);
++void esp_core_dump_to_flash(void *frame);
+ 
+ /**
+  * @brief  Print base64-encoded core dump to UART.
+@@ -85,4 +111,24 @@ void esp_core_dump_to_uart(XtExcFrame *frame);
+  */
+ esp_err_t esp_core_dump_image_get(size_t* out_addr, size_t *out_size);
+ 
++esp_err_t esp_core_dump_image_check(void);
++
++/**
++ * @brief  Erases coredump data in flash. esp_core_dump_image_get() will then return
++ *         ESP_ERR_NOT_FOUND. Can be used after a coredump has been transmitted successfully.
++ *         This function is always available, even when core dump is disabled in menuconfig.
++ *
++ * @return ESP_OK on success, otherwise \see esp_err_t
++ */
++esp_err_t esp_core_dump_image_erase(void);
++
++/**
++ * @brief  Get the summary of a core dump. This function works only with ELF format core dumps.
++ *
++ * @param  summary   Summary of the core dump
++ *
++ * @return ESP_OK on success, otherwise \see esp_err_t
++ */
++esp_err_t esp_core_dump_get_summary(esp_core_dump_summary_t *summary);
++
+ #endif
+diff --git a/components/espcoredump/include/port/xtensa/esp_core_dump_summary_extra_info.h b/components/espcoredump/include/port/xtensa/esp_core_dump_summary_extra_info.h
+new file mode 100644
+index 0000000000..dc9d9a2cc8
+--- /dev/null
++++ b/components/espcoredump/include/port/xtensa/esp_core_dump_summary_extra_info.h
+@@ -0,0 +1,36 @@
++// Copyright 2021 Espressif Systems (Shanghai) PTE LTD
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++#pragma once
++
++#ifdef __cplusplus
++extern "C"
++{
++#endif
++
++#define EPCx_REGISTER_COUNT XCHAL_NUM_INTLEVELS
++
++/**
++ * @brief Xtensa architecture specific extra information
++ */
++typedef struct {
++    uint32_t exc_cause;                 /*!< Cause of exception */
++    uint32_t exc_vaddr;                 /*!< Virtual address of exception */
++    uint32_t exc_a[16];                 /*!< a register set when the exception caused */
++    uint32_t epcx[EPCx_REGISTER_COUNT]; /*!< PC register address at exception level(1 to 7) */
++    uint8_t epcx_reg_bits;              /*!< Bit mask of available EPCx registers */
++} esp_core_dump_summary_extra_info_t;
++
++#ifdef __cplusplus
++}
++#endif
+diff --git a/components/espcoredump/include_core_dump/esp_core_dump_port.h b/components/espcoredump/include_core_dump/esp_core_dump_port.h
+index b6ea923c0f..83772234ec 100644
+--- a/components/espcoredump/include_core_dump/esp_core_dump_port.h
++++ b/components/espcoredump/include_core_dump/esp_core_dump_port.h
+@@ -28,6 +28,7 @@
+ #include "soc/cpu.h"
+ #include "esp_debug_helpers.h"
+ #include "esp_app_format.h"
++#include "esp_core_dump.h"
+ 
+ #ifdef __cplusplus
+ extern "C" {
+@@ -86,6 +87,33 @@ uint32_t esp_core_dump_get_isr_stack_end(void);
+ 
+ void esp_core_dump_report_stack_usage(void);
+ 
++/**
++ * @brief Parse extra information into summary
++ *
++ * @param summary Pointer to core dump summary structure
++ * @param ei_data Pointer to data of EXTRA_INFO note read from flash
++ */
++void esp_core_dump_summary_parse_extra_info(esp_core_dump_summary_t *summary, void *ei_data);
++
++/**
++ * @brief Parse exception registers into summary
++ *
++ * @param summary Pointer to core dump summary structure
++ * @param stack_data Pointer to data of crashed task's stack read from flash
++ */
++void esp_core_dump_summary_parse_exc_regs(esp_core_dump_summary_t *summary, void *stack_data);
++
++/**
++ * @brief Parse backtrace into bt_info
++ *
++ * @param bt_info Pointer to store backtrace info
++ * @param vaddr Pointer to crashed task's stack vaddr
++ * @param paddr Pointe to crashed task's stack paddr
++ * @param stack_size Stack size
++ */
++void esp_core_dump_summary_parse_backtrace_info(esp_core_dump_bt_info_t *bt_info, const void *vaddr,
++                                                const void *paddr, uint32_t stack_size);
++
+ #if ESP32_CORE_DUMP_STACK_SIZE > 0
+ #define COREDUMP_STACK_FILL_BYTE	        (0xa5U)
+ extern uint8_t s_coredump_stack[];
+diff --git a/components/espcoredump/include_core_dump/esp_core_dump_priv.h b/components/espcoredump/include_core_dump/esp_core_dump_priv.h
+index d991b05302..2bb9914d13 100644
+--- a/components/espcoredump/include_core_dump/esp_core_dump_priv.h
++++ b/components/espcoredump/include_core_dump/esp_core_dump_priv.h
+@@ -11,8 +11,8 @@
+ // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ // See the License for the specific language governing permissions and
+ // limitations under the License.
+-#ifndef ESP_CORE_DUMP_H_
+-#define ESP_CORE_DUMP_H_
++#ifndef ESP_CORE_DUMP_PRIV_H_
++#define ESP_CORE_DUMP_PRIV_H_
+ 
+ #ifdef __cplusplus
+ extern "C" {
+diff --git a/components/espcoredump/src/core_dump_elf.c b/components/espcoredump/src/core_dump_elf.c
+index ad471db5c5..505e47ce4b 100644
+--- a/components/espcoredump/src/core_dump_elf.c
++++ b/components/espcoredump/src/core_dump_elf.c
+@@ -15,6 +15,7 @@
+ #include "esp_attr.h"
+ #include "esp_partition.h"
+ #include "esp_ota_ops.h"
++#include "esp_spi_flash.h"
+ #include "sdkconfig.h"
+ #include "core_dump_elf.h"
+ 
+@@ -667,4 +668,124 @@ esp_err_t esp_core_dump_write_elf(void *frame, core_dump_write_config_t *write_c
+     return err;
+ }
+ 
++/* Below are the helper function to parse the core dump ELF stored in flash */
++
++static esp_err_t elf_core_dump_image_mmap(spi_flash_mmap_handle_t* core_data_handle, const void **map_addr)
++{
++    size_t out_size;
++    assert (core_data_handle);
++    assert(map_addr);
++
++    /* Find the partition that could potentially contain a (previous) core dump. */
++    const esp_partition_t *core_part = esp_partition_find_first(ESP_PARTITION_TYPE_DATA,
++                                                                ESP_PARTITION_SUBTYPE_DATA_COREDUMP,
++                                                                NULL);
++    if (!core_part) {
++        ESP_LOGE(TAG, "Core dump partition not found!");
++        return ESP_ERR_NOT_FOUND;
++    }
++    if (core_part->size < sizeof(uint32_t)) {
++        ESP_LOGE(TAG, "Core dump partition too small!");
++        return ESP_ERR_INVALID_SIZE;
++    }
++    /* Read the size of the core dump file from the partition */
++    esp_err_t ret = esp_partition_read(core_part, 0, &out_size, sizeof(uint32_t));
++    if (ret != ESP_OK) {
++        ESP_LOGE(TAG, "Failed to read core dump data size");
++        return ret;
++    }
++    /* map the full core dump parition, including the checksum. */
++    return esp_partition_mmap(core_part, 0, out_size, SPI_FLASH_MMAP_DATA,
++                              map_addr, core_data_handle);
++}
++
++static void elf_parse_version_info(esp_core_dump_summary_t *summary, void *data)
++{
++    core_dump_elf_version_info_t *version = (core_dump_elf_version_info_t *)data;
++    summary->core_dump_version = version->version;
++    memcpy(summary->app_elf_sha256, version->app_elf_sha256, ELF_APP_SHA256_SIZE);
++    ESP_COREDUMP_LOGD("Core dump version 0x%x", summary->core_dump_version);
++    ESP_COREDUMP_LOGD("App ELF SHA2 %s", (char *)summary->app_elf_sha256);
++}
++
++static void elf_parse_exc_task_name(esp_core_dump_summary_t *summary, void *tcb_data)
++{
++    StaticTask_t *tcb = (StaticTask_t *) tcb_data;
++    /* An ugly way to get the task name. We could possibly use pcTaskGetTaskName here.
++     * But that has assumption that TCB pointer can be used as TaskHandle. So let's
++     * keep it this way. */
++    memset(summary->exc_task, 0, sizeof(summary->exc_task));
++    strncpy(summary->exc_task, (char *)tcb->ucDummy7, sizeof(summary->exc_task) - 1);
++    ESP_COREDUMP_LOGD("Crashing task %s", summary->exc_task);
++}
++
++esp_err_t esp_core_dump_get_summary(esp_core_dump_summary_t *summary)
++{
++    int i;
++    elf_phdr *ph;
++    elf_note *note;
++    const void *map_addr;
++    size_t consumed_note_sz;
++    spi_flash_mmap_handle_t core_data_handle;
++
++    if (!summary) {
++        return ESP_ERR_INVALID_ARG;
++    }
++    esp_err_t err = elf_core_dump_image_mmap(&core_data_handle, &map_addr);
++    if (err != ESP_OK) {
++        return err;
++    }
++    uint8_t *ptr = (uint8_t *) map_addr + sizeof(core_dump_header_t);
++    elfhdr *eh = (elfhdr *)ptr;
++
++    ESP_COREDUMP_LOGD("ELF ident %02x %c %c %c", eh->e_ident[0], eh->e_ident[1], eh->e_ident[2], eh->e_ident[3]);
++    ESP_COREDUMP_LOGD("Ph_num %d offset %x", eh->e_phnum, eh->e_phoff);
++
++    for (i = 0; i < eh->e_phnum; i++) {
++        ph = (elf_phdr *)((ptr + i * sizeof(*ph)) + eh->e_phoff);
++        ESP_COREDUMP_LOGD("PHDR type %d off %x vaddr %x paddr %x filesz %x memsz %x flags %x align %x",
++                          ph->p_type, ph->p_offset, ph->p_vaddr, ph->p_paddr, ph->p_filesz, ph->p_memsz,
++                          ph->p_flags, ph->p_align);
++        if (ph->p_type == PT_NOTE) {
++            consumed_note_sz = 0;
++            while(consumed_note_sz < ph->p_memsz) {
++                note = (elf_note *)(ptr + ph->p_offset + consumed_note_sz);
++                char *nm = (char *)(ptr + ph->p_offset + consumed_note_sz + sizeof(elf_note));
++                ESP_COREDUMP_LOGD("Note NameSZ %x DescSZ %x Type %x name %s", note->n_namesz,
++                                  note->n_descsz, note->n_type, nm);
++                if (strncmp(nm, "EXTRA_INFO", note->n_namesz) == 0 ) {
++                    esp_core_dump_summary_parse_extra_info(summary, (void *)(nm + note->n_namesz));
++                }
++                if (strncmp(nm, "ESP_CORE_DUMP_INFO", note->n_namesz) == 0 ) {
++                    elf_parse_version_info(summary, (void *)(nm + note->n_namesz));
++                }
++                consumed_note_sz += note->n_namesz + note->n_descsz + sizeof(elf_note);
++                ALIGN(4, consumed_note_sz);
++            }
++        }
++    }
++    /* Following code assumes that task stack segment follows the TCB segment for the respective task.
++     * In general ELF does not impose any restrictions on segments' order so this can be changed without impacting core dump version.
++     * More universal and flexible way would be to retrieve stack start address from crashed task TCB segment and then look for the stack segment with that address.
++     */
++    int flag = 0;
++    for (i = 0; i < eh->e_phnum; i++) {
++        ph = (elf_phdr *)((ptr + i * sizeof(*ph)) + eh->e_phoff);
++        if (ph->p_type == PT_LOAD) {
++            if (flag) {
++                esp_core_dump_summary_parse_exc_regs(summary, (void *)(ptr + ph->p_offset));
++                esp_core_dump_summary_parse_backtrace_info(&summary->exc_bt_info, (void *) ph->p_vaddr,
++                                                           (void *)(ptr + ph->p_offset), ph->p_memsz);
++                break;
++            }
++            if (ph->p_vaddr == summary->exc_tcb) {
++                elf_parse_exc_task_name(summary, (void *)(ptr + ph->p_offset));
++                flag = 1;
++            }
++        }
++    }
++    spi_flash_munmap(core_data_handle);
++    return ESP_OK;
++}
++
+ #endif //CONFIG_ESP32_COREDUMP_DATA_FORMAT_ELF
+diff --git a/components/espcoredump/src/core_dump_flash.c b/components/espcoredump/src/core_dump_flash.c
+index f874f84983..e7fbb9cb33 100644
+--- a/components/espcoredump/src/core_dump_flash.c
++++ b/components/espcoredump/src/core_dump_flash.c
+@@ -24,6 +24,8 @@
+ 
+ const static DRAM_ATTR char TAG[] __attribute__((unused)) = "esp_core_dump_flash";
+ 
++#define BLANK_COREDUMP_SIZE 0xFFFFFFFF
++
+ #if CONFIG_ESP32_ENABLE_COREDUMP_TO_FLASH
+ 
+ typedef struct _core_dump_partition_t
+@@ -269,6 +271,121 @@ void esp_core_dump_init(void)
+ }
+ #endif
+ 
++esp_err_t esp_core_dump_image_erase(void)
++{
++    /* Find the partition that could potentially contain a (previous) core dump. */
++    const esp_partition_t *core_part = esp_partition_find_first(ESP_PARTITION_TYPE_DATA,
++                                                                ESP_PARTITION_SUBTYPE_DATA_COREDUMP,
++                                                                NULL);
++    if (!core_part) {
++        ESP_LOGE(TAG, "No core dump partition found!");
++        return ESP_ERR_NOT_FOUND;
++    }
++    if (core_part->size < sizeof(uint32_t)) {
++        ESP_LOGE(TAG, "Too small core dump partition!");
++        return ESP_ERR_INVALID_SIZE;
++    }
++
++    esp_err_t err = ESP_OK;
++    err = esp_partition_erase_range(core_part, 0, core_part->size);
++    if (err != ESP_OK) {
++        ESP_LOGE(TAG, "Failed to erase core dump partition (%d)!", err);
++        return err;
++    }
++
++    // Mark core dump as deleted by setting field size
++    const uint32_t blank_size = BLANK_COREDUMP_SIZE;
++    err = esp_partition_write(core_part, 0, &blank_size, sizeof(blank_size));
++    if (err != ESP_OK) {
++        ESP_LOGE(TAG, "Failed to write core dump partition size (%d)!", err);
++    }
++
++    return err;
++}
++
++esp_err_t esp_core_dump_image_check(void)
++{
++    esp_err_t err;
++    const void *core_data;
++    spi_flash_mmap_handle_t core_data_handle;
++
++    size_t out_size = 0;
++
++    const esp_partition_t *core_part = esp_partition_find_first(ESP_PARTITION_TYPE_DATA,
++                                                                ESP_PARTITION_SUBTYPE_DATA_COREDUMP,
++                                                                NULL);
++    if (!core_part) {
++        ESP_LOGE(TAG, "No core dump partition found!");
++        return ESP_ERR_NOT_FOUND;
++    }
++    if (core_part->size < sizeof(uint32_t)) {
++        ESP_LOGE(TAG, "Too small core dump partition!");
++        return ESP_ERR_INVALID_SIZE;
++    }
++
++    err = esp_partition_mmap(core_part, 0,  sizeof(uint32_t),
++                             SPI_FLASH_MMAP_DATA, &core_data, &core_data_handle);
++    if (err != ESP_OK) {
++        ESP_LOGE(TAG, "Failed to mmap core dump data (%d)!", err);
++        return err;
++    }
++
++    uint32_t *dw = (uint32_t *)core_data;
++    out_size = *dw;
++    spi_flash_munmap(core_data_handle);
++    if (out_size == 0xFFFFFFFF) {
++        ESP_LOGD(TAG, "Blank core dump partition!");
++        return ESP_ERR_INVALID_SIZE;
++    } else if ((out_size < sizeof(uint32_t)) || (out_size > core_part->size)) {
++        ESP_LOGE(TAG, "Incorrect size of core dump image: %d", out_size);
++        return ESP_ERR_INVALID_SIZE;
++    }
++
++    // remap full core dump with CRC
++    err = esp_partition_mmap(core_part, 0, out_size,
++                             SPI_FLASH_MMAP_DATA, &core_data, &core_data_handle);
++    if (err != ESP_OK) {
++        ESP_LOGE(TAG, "Failed to mmap core dump data (%d)!", err);
++        return err;
++    }
++    // TODO: check CRC or SHA basing on the version of coredump image stored in flash
++#if CONFIG_ESP32_COREDUMP_CHECKSUM_CRC32
++    uint32_t *crc = (uint32_t *)(((uint8_t *)core_data) + out_size);
++    crc--; // Point to CRC field
++
++    // Calculate CRC over core dump data except for CRC field
++    core_dump_crc_t cur_crc = crc32_le(0, (uint8_t const *)core_data, out_size - sizeof(core_dump_crc_t));
++    if (*crc != cur_crc) {
++        ESP_LOGD(TAG, "Core dump CRC offset 0x%x, data size: %u",
++                (uint32_t)((uint32_t)crc - (uint32_t)core_data), out_size);
++        ESP_LOGE(TAG, "Core dump data CRC check failed: 0x%x -> 0x%x!", *crc, cur_crc);
++        spi_flash_munmap(core_data_handle);
++        return ESP_ERR_INVALID_CRC;
++    }
++#elif CONFIG_ESP32_COREDUMP_CHECKSUM_SHA256
++    uint8_t* sha256_ptr = (uint8_t*)(((uint8_t *)core_data) + out_size);
++    sha256_ptr -= COREDUMP_SHA256_LEN;
++    ESP_LOGD(TAG, "Core dump data offset, size: %d, %u!",
++                    (uint32_t)((uint32_t)sha256_ptr - (uint32_t)core_data), out_size);
++    unsigned char sha_output[COREDUMP_SHA256_LEN];
++    mbedtls_sha256_context ctx;
++    ESP_LOGI(TAG, "Calculate SHA256 for coredump:");
++    (void)esp_core_dump_sha(&ctx, core_data, out_size - COREDUMP_SHA256_LEN, sha_output);
++    if (memcmp((uint8_t*)sha256_ptr, (uint8_t*)sha_output, COREDUMP_SHA256_LEN) != 0) {
++        ESP_LOGE(TAG, "Core dump data SHA256 check failed:");
++        esp_core_dump_print_sha256("Calculated SHA256", (uint8_t*)sha_output);
++        esp_core_dump_print_sha256("Image SHA256",(uint8_t*)sha256_ptr);
++        spi_flash_munmap(core_data_handle);
++        return ESP_ERR_INVALID_CRC;
++    } else {
++        ESP_LOGI(TAG, "Core dump data SHA256 is correct");
++    }
++#endif
++    spi_flash_munmap(core_data_handle);
++
++    return ESP_OK;
++}
++
+ esp_err_t esp_core_dump_image_get(size_t* out_addr, size_t *out_size)
+ {
+     esp_err_t err;
+diff --git a/components/espcoredump/src/core_dump_port.c b/components/espcoredump/src/core_dump_port.c
+index e4fa5ca63a..3272bfd136 100644
+--- a/components/espcoredump/src/core_dump_port.c
++++ b/components/espcoredump/src/core_dump_port.c
+@@ -18,6 +18,7 @@
+ #include "freertos/task.h"
+ #include "freertos/xtensa_context.h" // for exception register stack structure
+ #include "esp_core_dump_priv.h"
++#include "esp_debug_helpers.h"
+ 
+ const static DRAM_ATTR char TAG[] __attribute__((unused)) = "esp_core_dump_port";
+ 
+@@ -560,4 +561,90 @@ uint32_t esp_core_dump_get_extra_info(void **info)
+     return sizeof(s_extra_info);
+ }
+ 
++void esp_core_dump_summary_parse_extra_info(esp_core_dump_summary_t *summary, void *ei_data)
++{
++    int i;
++    xtensa_extra_info_t *ei = (xtensa_extra_info_t *) ei_data;
++    summary->exc_tcb = ei->crashed_task_tcb;
++    summary->ex_info.exc_vaddr = ei->excvaddr.reg_val;
++    summary->ex_info.exc_cause = ei->exccause.reg_val;
++    ESP_COREDUMP_LOGD("Crash TCB 0x%x", summary->exc_tcb);
++    ESP_COREDUMP_LOGD("excvaddr 0x%x", summary->ex_info.exc_vaddr);
++    ESP_COREDUMP_LOGD("exccause 0x%x", summary->ex_info.exc_cause);
++
++    memset(summary->ex_info.epcx, 0, sizeof(summary->ex_info.epcx));
++    summary->ex_info.epcx_reg_bits = 0;
++    for (i = 0; i < COREDUMP_EXTRA_REG_NUM; i++ ) {
++        if (ei->extra_regs[i].reg_index >= EPC_1
++            && ei->extra_regs[i].reg_index < (EPC_1 + XCHAL_NUM_INTLEVELS)) {
++            summary->ex_info.epcx[ei->extra_regs[i].reg_index - EPC_1] = ei->extra_regs[i].reg_val;
++            summary->ex_info.epcx_reg_bits |= (1 << (ei->extra_regs[i].reg_index - EPC_1));
++        }
++    }
++}
++
++void esp_core_dump_summary_parse_exc_regs(esp_core_dump_summary_t *summary, void *stack_data)
++{
++    int i;
++    long *a_reg;
++    XtExcFrame *stack = (XtExcFrame *) stack_data;
++    summary->exc_pc = esp_cpu_process_stack_pc(stack->pc);
++    ESP_COREDUMP_LOGD("Crashing PC 0x%x", summary->exc_pc);
++
++    a_reg = &stack->a0;
++    for (i = 0; i < 16; i++) {
++        summary->ex_info.exc_a[i] = a_reg[i];
++        ESP_COREDUMP_LOGD("A[%d] 0x%x", i, summary->ex_info.exc_a[i]);
++    }
++}
++
++void esp_core_dump_summary_parse_backtrace_info(esp_core_dump_bt_info_t *bt_info, const void *vaddr,
++                                                const void *paddr, uint32_t stack_size)
++{
++    int offset;
++    bool corrupted;
++    esp_backtrace_frame_t frame;
++    XtExcFrame *stack = (XtExcFrame *) paddr;
++    int max_depth = (int) (sizeof(bt_info->bt) / sizeof(bt_info->bt[0]));
++    int index = 0;
++
++    frame.pc = stack->pc;
++    frame.sp = stack->a1;
++    frame.next_pc = stack->a0;
++
++    corrupted = !(esp_stack_ptr_is_sane(frame.sp) &&
++                esp_ptr_executable((void *)esp_cpu_process_stack_pc(frame.pc)));
++
++    /* vaddr is actual stack address when crash occurred. However that stack is now saved
++     * in the flash at a different location. Hence for each SP, we need to adjust the offset
++     * to point to next frame in the flash */
++    offset = (uint32_t) stack - (uint32_t) vaddr;
++
++    ESP_COREDUMP_LOGD("Crash Backtrace");
++    bt_info->bt[index] = esp_cpu_process_stack_pc(frame.pc);
++    ESP_COREDUMP_LOGD(" 0x%x", bt_info->bt[index]);
++    index++;
++
++    while (max_depth-- > 0 && frame.next_pc && !corrupted) {
++        /* Check if the Stack Pointer is in valid address range */
++        if (!((uint32_t)frame.sp >= (uint32_t)vaddr &&
++            ((uint32_t)frame.sp <= (uint32_t)vaddr + stack_size))) {
++            corrupted = true;
++            break;
++        }
++        /* Adjusting the SP to address in flash than in actual RAM */
++        frame.sp += offset;
++        if (!esp_backtrace_get_next_frame(&frame)) {
++            corrupted = true;
++        }
++        if (corrupted == false) {
++            bt_info->bt[index] = esp_cpu_process_stack_pc(frame.pc);
++            ESP_COREDUMP_LOGD(" 0x%x", bt_info->bt[index]);
++            index++;
++        }
++    }
++    bt_info->depth = index;
++    bt_info->corrupted = corrupted;
++}
++
+ #endif
+-- 
+2.29.2
+

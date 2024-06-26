@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "parseJobDoc",
+  "proof-root": "test/cbmc/proofs"
+}

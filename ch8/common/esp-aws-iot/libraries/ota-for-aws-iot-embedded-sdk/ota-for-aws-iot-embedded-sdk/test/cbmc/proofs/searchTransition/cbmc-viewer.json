@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "searchTransition",
+  "proof-root": "test/cbmc/proofs"
+}

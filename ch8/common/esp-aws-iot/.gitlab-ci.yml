@@ -1,0 +1,63 @@
+stages:
+  - build
+
+variables:
+  V: "0"
+  MAKEFLAGS: "-j8 --no-keep-going"
+  GIT_SUBMODULE_STRATEGY: recursive
+
+before_script:
+   # add gitlab ssh key
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo -n $GITLAB_KEY > ~/.ssh/id_rsa_base64
+    - base64 --decode --ignore-garbage ~/.ssh/id_rsa_base64 > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - echo -e "Host gitlab.espressif.cn\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+    # Create esp-rainmaker-bins-${CI_JOB_ID}/ dir (to copy binaries into for artifacts)
+    - mkdir -p $CI_PROJECT_DIR/esp-rainmaker-bins-${CI_JOB_ID}
+
+.build_all_examples: &build_all_examples
+- pip install --upgrade idf-component-manager
+- for EXAMPLE in $EXAMPLES; do
+- cd $CI_PROJECT_DIR/examples/$EXAMPLE
+- echo Building $EXAMPLE
+- for TARGET in $EXAMPLE_TARGETS; do
+- echo Building for $TARGET
+- idf.py set-target $TARGET
+- idf.py build
+- done
+- echo Build Complete for $EXAMPLE
+- done
+
+.build_template:
+  stage: build
+  image: espressif/idf:latest
+  tags:
+    - build
+  variables:
+    PEDANTIC_FLAGS: "-Werror=deprecated-declarations -Wno-error=cpp"
+    EXTRA_CFLAGS: "${PEDANTIC_FLAGS}"
+    EXTRA_CXXFLAGS: "${PEDANTIC_FLAGS}"
+    EXAMPLE_TARGETS: "esp32"
+    EXAMPLES: "mqtt/tls_mutual_auth http/http_mutual_auth jobs mqtt/tls_mutual_auth ota/ota_mqtt ota/ota_http thing_shadow fleet_provisioning/fleet_provisioning_with_csr"
+  script:
+    - *build_all_examples
+
+build_idf_v4.3:
+  extends: .build_template
+  image: espressif/idf:release-v4.3
+  variables:
+    EXAMPLE_TARGETS: "esp32 esp32s2 esp32c3"
+
+build_idf_v4.4:
+  extends: .build_template
+  image: espressif/idf:release-v4.4
+  variables:
+    EXAMPLE_TARGETS: "esp32 esp32s2 esp32c3 esp32s3"
+
+build_idf_v5.0:
+  extends: .build_template
+  image: espressif/idf:release-v5.0
+  variables:
+    EXAMPLE_TARGETS: "esp32 esp32s2 esp32c3 esp32s3 esp32c2"

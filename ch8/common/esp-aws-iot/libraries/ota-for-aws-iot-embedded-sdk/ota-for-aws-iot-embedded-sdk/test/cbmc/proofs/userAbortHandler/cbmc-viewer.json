@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "userAbortHandler",
+  "proof-root": "test/cbmc/proofs"
+}

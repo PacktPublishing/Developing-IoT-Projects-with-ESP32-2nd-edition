@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "publishStatusMessage",
+  "proof-root": "test/cbmc/proofs"
+}

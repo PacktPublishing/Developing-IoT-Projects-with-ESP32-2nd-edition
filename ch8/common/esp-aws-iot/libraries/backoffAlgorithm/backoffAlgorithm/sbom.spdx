@@ -1,0 +1,29 @@
+SPDXVersion: SPDX-2.2
+DataLicense: CC0-1.0
+SPDXID: SPDXRef-DOCUMENT
+DocumentName: backoffAlgorithm
+DocumentNamespace: https://github.com/FreeRTOS/backoffAlgorithm/blob/v1.3.0/sbom.spdx
+Creator: Amazon Web Services
+Created: 2022-10-14T15:39:49Z
+CreatorComment: NOASSERTION
+DocumentComment: NOASSERTION
+
+PackageName: backoffAlgorithm
+SPDXID: SPDXRef-Package-backoffAlgorithm
+PackageVersion: v1.3.0
+PackageDownloadLocation: https://github.com/FreeRTOS/backoffAlgorithm/tree/v1.3.0
+PackageLicenseConcluded: MIT
+FilesAnalyzed: True
+PackageVerificationCode: 8cf87c7d09f62a054172b8f82227e3c116b08388
+PackageCopyrightText: NOASSERTION
+PackageSummary: NOASSERTION
+PackageDescription: "Algorithm for calculating exponential backoff with jitter for network retry attempts.\n"
+
+
+FileName: ./backoff_algorithm.c
+SPDXID: SPDXRef-File-backoff_algorithm.c
+FileChecksum: SHA1: ee94d75f7a99e11628734dd306e209913ea3058e
+LicenseConcluded: MIT
+FileCopyrightText: NOASSERTION
+FileComment: NOASSERTION
+

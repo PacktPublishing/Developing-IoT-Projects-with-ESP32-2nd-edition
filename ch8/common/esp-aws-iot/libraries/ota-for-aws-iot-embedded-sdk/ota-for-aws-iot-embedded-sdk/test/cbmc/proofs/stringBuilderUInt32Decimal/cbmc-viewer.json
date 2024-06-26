@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "stringBuilderUInt32Decimal",
+  "proof-root": "test/cbmc/proofs"
+}

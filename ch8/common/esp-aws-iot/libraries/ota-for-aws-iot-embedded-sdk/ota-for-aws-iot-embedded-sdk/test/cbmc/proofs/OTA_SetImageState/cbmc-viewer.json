@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "OTA_SetImageState",
+  "proof-root": "test/cbmc/proofs"
+}

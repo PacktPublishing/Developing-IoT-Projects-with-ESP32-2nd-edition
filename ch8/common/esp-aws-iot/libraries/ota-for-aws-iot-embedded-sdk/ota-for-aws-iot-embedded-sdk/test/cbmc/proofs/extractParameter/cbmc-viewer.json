@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "extractParameter",
+  "proof-root": "test/cbmc/proofs"
+}

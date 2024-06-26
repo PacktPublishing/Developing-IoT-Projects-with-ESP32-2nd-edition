@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "handleSelfTestJobDoc",
+  "proof-root": "test/cbmc/proofs"
+}

@@ -1,0 +1,7 @@
+{ "expected-missing-functions":
+  [
+
+  ],
+  "proof-name": "MQTTAgentCommand_Subscribe",
+  "proof-root": "test/cbmc/proofs"
+}

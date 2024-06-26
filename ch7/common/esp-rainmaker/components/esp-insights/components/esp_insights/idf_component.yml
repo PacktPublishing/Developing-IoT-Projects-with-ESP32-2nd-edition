@@ -1,0 +1,21 @@
+version: "1.0.1"
+description: Firmware agent for ESP Insights, which is a remote diagnostics solution to monitor the health of ESP devices in the field.
+url: https://github.com/espressif/esp-insights/tree/main/components/esp_insights
+repository: https://github.com/espressif/esp-insights.git
+issues: https://github.com/espressif/esp-insights/issues
+dependencies:
+  idf:
+    version: ">=4.1"
+  espressif/rmaker_common:
+    version: "~1.4.0"
+    override_path: '../rmaker_common/'
+  espressif/esp_diag_data_store:
+    version: "~1.0"
+    override_path: '../esp_diag_data_store/'
+  espressif/esp_diagnostics:
+    version: "~1.0"
+    override_path: '../esp_diagnostics/'
+  espressif/cbor:
+    version: "~0.6"
+    rules:
+      - if: "idf_version >=5.0"

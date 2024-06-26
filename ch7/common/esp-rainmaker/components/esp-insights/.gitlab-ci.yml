@@ -1,0 +1,274 @@
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  V: "0"
+  MAKEFLAGS: "-j8 --no-keep-going"
+  APP_BUILD: "all"
+  GIT_SUBMODULE_STRATEGY: recursive
+  ESP_DOCS_ENV_IMAGE: "$CI_DOCKER_REGISTRY/esp-idf-doc-env-v5.0:2-2"
+  ESP_DOCS_PATH: "$CI_PROJECT_DIR"
+
+before_script:
+  # add gitlab ssh key
+  - mkdir -p ~/.ssh
+  - chmod 700 ~/.ssh
+  - echo -n $GITLAB_KEY > ~/.ssh/id_rsa_base64
+  - base64 --decode --ignore-garbage ~/.ssh/id_rsa_base64 > ~/.ssh/id_rsa
+  - chmod 600 ~/.ssh/id_rsa
+  - echo -e "Host gitlab.espressif.cn\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+  # Create insights-bins-${CI_JOB_ID}/ dir (to copy binaries into for artifacts)
+  - mkdir -p $CI_PROJECT_DIR/esp-insights-bins-${CI_JOB_ID}
+
+.setup_idf: &setup_idf
+  - echo Checking git version
+  - git --version
+  - echo Cloning esp-idf - Started
+  - git clone --depth 1 --shallow-submodules --recursive --single-branch -b ${IDF_GIT_BRANCH} --reference-if-able /Users/espressif/local_reference/esp-idf https://github.com/espressif/esp-idf.git
+  - cd esp-idf
+  - echo Cloning esp-idf - Done
+  - echo Running install.sh - Started
+  - ./install.sh --enable-ttfw
+  - echo Running install.sh - Done
+  - echo Running export.sh - Started
+  - source export.sh
+  - echo Running export.sh - Done
+  - export PYTHONPATH=$IDF_PATH/tools/ci/python_packages:$PYTHONPATH
+  - cd $CI_PROJECT_DIR/components/esp_diag_data_store/test/python_tests
+  - pip install -r python_test_requirement.txt
+
+.build_minimal_diagnostics: &build_minimal_diagnostics
+  # Building minimal_diagnostics app - Started
+  - echo Building minimal_diagnostics app - Started
+  - ls
+  - cd $CI_PROJECT_DIR/examples/minimal_diagnostics
+  # Build this for MQTT transport
+  - echo CONFIG_ESP_INSIGHTS_TRANSPORT_MQTT=y >> sdkconfig.defaults
+  - echo Running idf.py
+  - idf.py build
+  - echo Building minimal_diagnostics app - Done
+  # Building minimal_diagnostics app - Done
+  # Copying minimal_diagnostics.bin to esp-insights-bins-${CI_JOB_ID}/
+  - echo Copy minimal_diagnostics.bin to esp-insights-bins-${CI_JOB_ID}/
+  - cp $CI_PROJECT_DIR/examples/minimal_diagnostics/build/minimal_diagnostics.bin $CI_PROJECT_DIR/esp-insights-bins-${CI_JOB_ID}/
+
+.build_diagnostics_smoke_test: &build_diagnostics_smoke_test
+  - echo Building diagnostics_smoke_test app - Started
+  - ls
+  - cd $CI_PROJECT_DIR/examples/diagnostics_smoke_test
+  # Build this example for HTTPS transport, insights_auth_key.txt file is required
+  - touch main/insights_auth_key.txt
+  - for TARGET in $EXAMPLE_TARGETS; do
+  - echo Building diagnostics_smoke_test for $TARGET
+  - idf.py set-target $TARGET
+  - idf.py build
+  # Copying diagnostics smoke binary for esp-idf master and target ESP32 to artifacts
+  - echo Copy diagnostics_smoke_test.bin to esp-insights-bins-${CI_JOB_ID}/
+  - mkdir -p $CI_PROJECT_DIR/esp-insights-bins-${CI_JOB_ID}/diagnostics_smoke_test/$TARGET/
+  - cp $CI_PROJECT_DIR/examples/diagnostics_smoke_test/build/diagnostics_smoke_test.bin $CI_PROJECT_DIR/esp-insights-bins-${CI_JOB_ID}/diagnostics_smoke_test/$TARGET/
+  - rm -rf build sdkconfig
+  - done
+  - echo Building diagnostics_smoke_test Done
+  # Generating zip file for binaries generated
+  - cd $CI_PROJECT_DIR
+  - echo Generating zip file for binaries generated
+  - tar -zcvf esp-insights-bins-${CI_JOB_ID}.zip esp-insights-bins-${CI_JOB_ID}/
+
+.build_template:
+  stage: build
+  image: espressif/idf:latest
+  tags:
+    - build
+  variables:
+    PEDANTIC_FLAGS: "-Werror -Werror=deprecated-declarations -Wno-error=cpp -Werror=unused-variable -Werror=unused-but-set-variable -Werror=unused-function"
+    EXTRA_CFLAGS: "${PEDANTIC_FLAGS}"
+    EXTRA_CXXFLAGS: "${PEDANTIC_FLAGS}"
+    COREDUMP_PATCH: "0"
+  artifacts:
+    paths:
+      - $CI_PROJECT_DIR/esp-insights-bins-${CI_JOB_ID}.zip
+    expire_in: 6 mos
+  script:
+    # Check and apply coredump patch for IDF 4.1 an 4.2
+    - cd $IDF_PATH
+    - cp $CI_PROJECT_DIR/idf-patches/Diagnostics-support-in-esp-idf-tag-v4.1.2-and-tag-v4.2.2.patch .
+    - if [[ "$COREDUMP_PATCH" == "1" ]]; then
+    - patch -p1 < Diagnostics-support-in-esp-idf-tag-v4.1.2-and-tag-v4.2.2.patch
+    - fi
+    - cd -
+    - pip install --upgrade idf-component-manager
+    # build example
+    - for APP in $APP_BUILD; do
+    - if [[ "$APP_BUILD" == "all" || "$APP" == "minimal_diagnostics" ]]; then
+    - *build_minimal_diagnostics
+    - fi
+    - if [[ "$APP_BUILD" == "all" || "$APP" == "diagnostics_smoke_test" ]]; then
+    - *build_diagnostics_smoke_test
+    - fi
+    - done
+    - echo Build Complete for $APP_BUILD
+
+build_idf_v5.0:
+  extends: .build_template
+  image: espressif/idf:release-v5.0
+  variables: # esp32c2 not included b'coz of link error on cpu coredump
+    EXAMPLE_TARGETS: esp32 esp32s2 esp32s3 esp32c3
+
+build_idf_v4.4:
+  extends: .build_template
+  image: espressif/idf:release-v4.4
+  variables:
+    EXAMPLE_TARGETS: esp32 esp32s2 esp32s3 esp32c3
+
+build_idf_v4.3:
+  extends: .build_template
+  image: espressif/idf:release-v4.3
+  variables:
+    PEDANTIC_FLAGS: "-Werror=deprecated-declarations -Wno-error=cpp -Werror=unused-variable -Werror=unused-but-set-variable -Werror=unused-function"
+    EXTRA_CFLAGS: "${PEDANTIC_FLAGS}"
+    EXTRA_CXXFLAGS: "${PEDANTIC_FLAGS}"
+    EXAMPLE_TARGETS: esp32 esp32s2 esp32c3
+
+build_idf_v4.2.2:
+  extends: .build_template
+  image: espressif/idf:v4.2.2
+  variables:
+    COREDUMP_PATCH: "1"
+    EXAMPLE_TARGETS: esp32
+
+build_idf_v4.1.2:
+  extends: .build_template
+  image: espressif/idf:v4.1.2
+  variables:
+    COREDUMP_PATCH: "1"
+    EXAMPLE_TARGETS: esp32
+
+unit_tests:
+  before_script: []
+  variables:
+    TEST_CONFIG_PATH: $CI_PROJECT_DIR/components/esp_diag_data_store/test/python_tests/env_config.yml
+  stage: test
+  timeout: 2 hours
+  tags:
+    - idf_unit_test_runner
+  script:
+      - *setup_idf
+      # update value of usb port in env config file
+      - cd $CI_PROJECT_DIR/components/esp_diag_data_store/test/python_tests
+      - yq eval ".default.unit-test-app = \"$UT_USB_PORT\"" -i "env_config.yml"
+      - cd $IDF_PATH/tools/unit-test-app
+      # Clean any previous configuration and builds
+      - rm -rf build sdkconfig $IDF_PATH/TEST_LOGS
+      # Append `/path/to/esp-insights/components` directory to `EXTRA_COMPONENT_DIRS` in `CMakeLists.txt`
+      - gsed -i '4ilist(APPEND EXTRA_COMPONENT_DIRS "$ENV{IDF_PATH}/../../esp-insights/components")' CMakeLists.txt
+      - echo CONFIG_DIAG_DATA_STORE_RTC=y >> $IDF_PATH/tools/unit-test-app/sdkconfig.defaults
+      - idf.py set-target esp32
+      - idf.py -T esp_diag_data_store build
+      # test application will be flashed in following step only
+      - ./unit_test.py "data store init deinit" "data store write" "data store write read release_all"
+        "data store wrapped_read write_till_exact_full" "data store write read release_zero read release_zero release_all"
+        "data store validate data in RTC after crash" --env_config_file $TEST_CONFIG_PATH
+      # Flash diagnostics smoke test example and run the tests
+      - cd $CI_PROJECT_DIR/examples/diagnostics_smoke_test
+      # Clean any previous configuration and builds
+      - rm -rf build sdkconfig
+      # update WIFI details
+      - echo 'CONFIG_EXAMPLE_WIFI_SSID="ES_Staff"' >> sdkconfig.defaults
+      - echo 'CONFIG_EXAMPLE_WIFI_PASSWORD="ES@puba45"' >> sdkconfig.defaults
+      - echo CONFIG_ESP_INSIGHTS_TRANSPORT_MQTT=y >> sdkconfig.defaults
+      - echo $InsightsAuthKeyToken > main/insights_auth_key.txt || true
+      - idf.py build flash -p $UT_USB_PORT
+      - cd $CI_PROJECT_DIR/components/esp_diag_data_store/test/python_tests
+       # Run python test cases
+      - python3 stress_tests.py --password=${PASSWORD} --username=${USERNAME} --base_uri=${BASE_URI} --diag_uri=${DIAG_URI}
+
+  artifacts:
+    name: "Test_Reports"
+    paths:
+      - $CI_PROJECT_DIR/components/esp_diag_data_store/test/python_tests/*html
+
+build_docs:
+  stage: build
+  image: $ESP_DOCS_ENV_IMAGE
+  tags:
+    - build_docs
+  artifacts:
+    paths:
+      - docs/_build/*/*/*.txt
+      - docs/_build/*/*/html/*
+    expire_in: 4 days
+  # No cleaning when the artifacts
+  after_script: []
+  script:
+    - cd docs
+    - pip install -r requirements.txt
+    - build-docs -l en -t esp32
+
+.deploy_docs_template:
+  stage: deploy
+  image: $ESP_DOCS_ENV_IMAGE
+  tags:
+    - deploy_docs
+  needs:
+    - build_docs
+  only:
+    changes:
+      - "docs/**/*"
+  script:
+    - source ${CI_PROJECT_DIR}/docs/utils.sh
+    - add_doc_server_ssh_keys $DOCS_DEPLOY_PRIVATEKEY $DOCS_DEPLOY_SERVER $DOCS_DEPLOY_SERVER_USER
+    - export GIT_VER=$(git describe --always)
+    - pip install -r ${CI_PROJECT_DIR}/docs/requirements.txt
+    - deploy-docs
+
+deploy_docs_preview:
+  extends:
+    - .deploy_docs_template
+  except:
+    refs:
+      - main
+  variables:
+    TYPE: "preview"
+    DOCS_BUILD_DIR: "${CI_PROJECT_DIR}/docs/_build/"
+    DOCS_DEPLOY_PRIVATEKEY: "$DOCS_PREVIEW_PRIVATEKEY"
+    DOCS_DEPLOY_SERVER: "$DOCS_PREVIEW_SERVER"
+    DOCS_DEPLOY_SERVER_USER: "$DOCS_PREVIEW_USER"
+    DOCS_DEPLOY_PATH: "$DOCS_PREVIEW_PATH"
+    DOCS_DEPLOY_URL_BASE: "$DOCS_PREVIEW_URL_BASE"
+
+deploy_docs_production:
+  extends:
+    - .deploy_docs_template
+  only:
+    refs:
+      - main
+  variables:
+    TYPE: "production"
+    DOCS_BUILD_DIR: "${CI_PROJECT_DIR}/docs/_build/"
+    DOCS_DEPLOY_PRIVATEKEY: "$DOCS_PROD_PRIVATEKEY"
+    DOCS_DEPLOY_SERVER: "$DOCS_PROD_SERVER"
+    DOCS_DEPLOY_SERVER_USER: "$DOCS_PROD_USER"
+    DOCS_DEPLOY_PATH: "$DOCS_PROD_PATH"
+    DOCS_DEPLOY_URL_BASE: "$DOCS_PROD_URL_BASE"
+
+push_main_to_github:
+  stage: deploy
+  image: espressif/idf:release-v5.0
+  tags:
+    - build
+  when: on_success
+  dependencies: []
+  only:
+    - main
+  script:
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo -n $GH_PUSH_KEY > ~/.ssh/id_rsa_base64
+    - base64 --decode --ignore-garbage ~/.ssh/id_rsa_base64 > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+    - git remote remove github &>/dev/null || true
+    - git remote add github git@github.com:espressif/esp-insights.git
+    - git push github "${CI_COMMIT_SHA}:refs/heads/${CI_COMMIT_REF_NAME}"

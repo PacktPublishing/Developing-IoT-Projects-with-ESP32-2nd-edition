@@ -62,7 +62,5 @@ extern "C" void app_main(void)
     app_ui.start();
 
     app_sensor_node.start();
-/*
     app_driver.start();
-    */
 }

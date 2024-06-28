@@ -15,7 +15,7 @@
 #include "AppNode.hpp"
 #include "AppCommon.hpp"
 
-#define LIGHT_INTENSITY(x) (uint8_t)((x) > 2048 ? 100 : (int)((x)*100 / 2048))
+#define LIGHT_INTENSITY(x) (uint8_t)((x) > 2048 ? 100 : (int)((x) * 100 / 2048))
 
 namespace app
 {
@@ -45,7 +45,7 @@ namespace app
             memset(&m_light_sensor, 0, sizeof(tsl2561_t));
 
             ESP_ERROR_CHECK(i2cdev_init());
-            
+
             ESP_ERROR_CHECK(tsl2561_init_desc(&m_light_sensor, TSL2561_I2C_ADDR_FLOAT, I2C_NUM_0, gpio_num_t::GPIO_NUM_41, gpio_num_t::GPIO_NUM_40));
             ESP_ERROR_CHECK(tsl2561_init(&m_light_sensor));
 
@@ -59,7 +59,10 @@ namespace app
         void start() override
         {
             AppNode::start();
-            xTaskCreate(readSensor, "sensor", 4096, this, 5, nullptr);
+            static StaticTask_t xTaskBuffer;
+            static StackType_t xStack[4096];
+
+            xTaskCreateStatic(readSensor, "sensor", 4096, this, 5, xStack, &xTaskBuffer);
         }
 
         void setReadingCb(SensorReadingCb_f cb)

@@ -34,10 +34,6 @@ extern "C" void app_main(void)
     bsp_display_backlight_on();
     bsp_board_init();
 
-    // bsp_board_init();
-    // bsp_board_power_ctrl(POWER_MODULE_AUDIO, true);
-    // bsp_spiffs_init("storage", "/spiffs", 10);
-
     m_app_btn.init();
     m_app_audio.init(audio_mute_function);
     m_app_ui.init(&m_app_btn, &m_app_audio);

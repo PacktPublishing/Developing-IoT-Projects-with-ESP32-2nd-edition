@@ -46,11 +46,11 @@ namespace app
 
             ESP_ERROR_CHECK(i2cdev_init());
             
-            ESP_ERROR_CHECK(tsl2561_init_desc(&m_light_sensor, TSL2561_I2C_ADDR_FLOAT, I2C_NUM_1, gpio_num_t::GPIO_NUM_41, gpio_num_t::GPIO_NUM_40));
+            ESP_ERROR_CHECK(tsl2561_init_desc(&m_light_sensor, TSL2561_I2C_ADDR_FLOAT, I2C_NUM_0, gpio_num_t::GPIO_NUM_41, gpio_num_t::GPIO_NUM_40));
             ESP_ERROR_CHECK(tsl2561_init(&m_light_sensor));
 
             ESP_ERROR_CHECK(bmp280_init_default_params(&bme280_sensor_params));
-            ESP_ERROR_CHECK(bmp280_init_desc(&m_temp_sensor, BMP280_I2C_ADDRESS_0, I2C_NUM_1, gpio_num_t::GPIO_NUM_41, gpio_num_t::GPIO_NUM_40));
+            ESP_ERROR_CHECK(bmp280_init_desc(&m_temp_sensor, BMP280_I2C_ADDRESS_0, I2C_NUM_0, gpio_num_t::GPIO_NUM_41, gpio_num_t::GPIO_NUM_40));
             ESP_ERROR_CHECK(bmp280_init(&m_temp_sensor, &bme280_sensor_params));
 
             AppNode::init();

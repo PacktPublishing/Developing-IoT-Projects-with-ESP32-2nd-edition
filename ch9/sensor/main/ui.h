@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-#include "lvgl/lvgl.h"
+#include "lvgl.h"
 
 extern lv_obj_t * ui_Screen1;
 extern lv_obj_t * ui_txtTime;

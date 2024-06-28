@@ -16,9 +16,6 @@ extern "C" void app_main(void)
     app_driver.init();
     app_sensor_node.init();
 
-    // bsp_i2c_init();
-    // bsp_spiffs_mount();
-
     // LVGL initialisation is on BSP
     bsp_display_cfg_t cfg = {
         .lvgl_port_cfg = ESP_LVGL_PORT_INIT_CONFIG(),
@@ -60,7 +57,6 @@ extern "C" void app_main(void)
     app_sensor_node.addRmakerEventHandler(mqtt_state_handler, nullptr);
 
     app_ui.start();
-
     app_sensor_node.start();
     app_driver.start();
 }

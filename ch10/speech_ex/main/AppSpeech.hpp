@@ -162,7 +162,7 @@ namespace app
 
     afe_config_t AppSpeech::defaultAfeConfig()
     {
-        afe_config_t afe_config = {.debug_hook = {{AFE_DEBUG_HOOK_MASE_TASK_IN, NULL}, {AFE_DEBUG_HOOK_FETCH_TASK_IN, NULL}}};
+        afe_config_t afe_config = {.debug_hook = {{AFE_DEBUG_HOOK_MASE_TASK_IN, nullptr}, {AFE_DEBUG_HOOK_FETCH_TASK_IN, nullptr}}};
 
         afe_config.aec_init = true;
         afe_config.se_init = true;
@@ -172,8 +172,8 @@ namespace app
         afe_config.voice_communication_agc_init = false;
         afe_config.voice_communication_agc_gain = 15;
         afe_config.vad_mode = VAD_MODE_3;
-        afe_config.wakenet_model_name = NULL;
-        afe_config.wakenet_model_name_2 = NULL;
+        afe_config.wakenet_model_name = nullptr;
+        afe_config.wakenet_model_name_2 = nullptr;
         afe_config.wakenet_mode = DET_MODE_2CH_90;
         afe_config.afe_mode = SR_MODE_LOW_COST;
         afe_config.afe_perferred_core = 0;
@@ -184,7 +184,7 @@ namespace app
         afe_config.agc_mode = AFE_MN_PEAK_AGC_MODE_2;
         afe_config.debug_init = false;
         afe_config.afe_ns_mode = NS_MODE_SSP;
-        afe_config.afe_ns_model_name = NULL;
+        afe_config.afe_ns_model_name = nullptr;
 
         afe_config.pcm_config.total_ch_num = 3;
         afe_config.pcm_config.mic_num = 2;

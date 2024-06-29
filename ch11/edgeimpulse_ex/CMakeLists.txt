@@ -4,8 +4,6 @@ set(EXTRA_COMPONENT_DIRS
 ../../ch10/components/esp-skainet-extra-components
 ../../ch10/components/esp-skainet/components)
 
-# set(CMAKE_CXX_FLAGS "-O11 -std=c++11")
-
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(edgeimpulse_ex)
 

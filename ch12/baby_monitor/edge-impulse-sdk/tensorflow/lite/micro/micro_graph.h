@@ -80,6 +80,12 @@ class MicroGraph {
   // to be the subgraph of that operator.
   int GetCurrentSubgraphIndex() { return current_subgraph_index_; }
 
+  // Set the current subgraph index.
+  void SetCurrentSubgraphIndex(int subgraph_idx)
+  {
+    current_subgraph_index_ = subgraph_idx;
+  }
+
   // Gets the list of alloctions for each subgraph. This is the source of truth
   // for all per-subgraph allocation data.
   SubgraphAllocations* GetAllocations() { return subgraph_allocations_; }

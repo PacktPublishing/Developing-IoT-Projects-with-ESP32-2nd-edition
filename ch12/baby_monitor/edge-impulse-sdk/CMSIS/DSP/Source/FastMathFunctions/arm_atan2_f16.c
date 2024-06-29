@@ -137,7 +137,7 @@ arm_status arm_atan2_f16(float16_t y,float16_t x,float16_t *result)
         }
         else
         {
-            if (signbit(y))
+            if (signbit((float)y))
             {
                *result= -(_Float16)PIF16;
             }

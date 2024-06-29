@@ -75,13 +75,15 @@
 
 #ifndef EI_CLASSIFIER_TFLITE_ENABLE_ESP_NN
     #if defined(ESP32)
+        #include "sdkconfig.h"
         #define EI_CLASSIFIER_TFLITE_ENABLE_ESP_NN      1
         #define ESP_NN                                  1
-    #endif // Arduino ESP32 check
+    #endif // ESP32 check
+    #if defined(CONFIG_IDF_TARGET_ESP32S3)
+        #define EI_CLASSIFIER_TFLITE_ENABLE_ESP_NN_S3      1
+    #endif // ESP32S3 check
 #else
-    #ifndef ESP_NN
-        #define ESP_NN                                  1
-    #endif
+    #define ESP_NN                                  1
 #endif
 
 // no include checks in the compiler? then just include metadata and then ops_define (optional if on EON model)

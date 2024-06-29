@@ -15,10 +15,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifndef _EIDSP_RETURN_TYPES_H_
-#define _EIDSP_RETURN_TYPES_H_
+#ifndef _EIDSP_RETURN_TYPES_HPP_
+#define _EIDSP_RETURN_TYPES_HPP_
 
 #include <stdint.h>
+#include "returntypes.h"
 
 namespace ei {
 

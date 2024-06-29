@@ -70,7 +70,10 @@ extern "C" void post_process(const void *impulse_arg, int8_t *out_buf_0, int8_t 
  */
 EI_IMPULSE_ERROR run_nn_inference(
     const ei_impulse_t *impulse,
-    ei::matrix_t *fmatrix,
+    ei_feature_t *fmatrix,
+    uint32_t learn_block_index,
+    uint32_t* input_block_ids,
+    uint32_t input_block_ids_size,
     ei_impulse_result_t *result,
     void *config_ptr,
     bool debug = false)
@@ -78,7 +81,7 @@ EI_IMPULSE_ERROR run_nn_inference(
     ei_learning_block_config_tflite_graph_t *block_config = (ei_learning_block_config_tflite_graph_t*)config_ptr;
     ei_config_tensaiflow_graph_t *graph_config = (ei_config_tensaiflow_graph_t*)block_config->graph_config;
 
-    if (impulse->object_detection) {
+    if (block_config->object_detection) {
         ei_printf("ERR: Object detection models are not supported with TensaiFlow\n");
         return EI_IMPULSE_UNSUPPORTED_INFERENCING_ENGINE;
     }
@@ -135,8 +138,15 @@ EI_IMPULSE_ERROR run_nn_inference_image_quantized(
     processed_features = (int8_t *) features_matrix.buffer;
 
     // run DSP process and quantize automatically
-    int ret = extract_image_features_quantized(signal, &features_matrix, impulse->dsp_blocks[0].config, graph_config->input_scale, graph_config->input_zeropoint,
-        impulse->frequency, impulse->learning_blocks[0].image_scaling);
+    int ret = extract_image_features_quantized(
+        signal,
+        &features_matrix,
+        impulse->dsp_blocks[0].config,
+        graph_config->input_scale,
+        graph_config->input_zeropoint,
+        impulse->frequency,
+        impulse->learning_blocks[0].image_scaling);
+
     if (ret != EIDSP_OK) {
         ei_printf("ERR: Failed to run DSP process (%d)\n", ret);
         return EI_IMPULSE_DSP_ERROR;
@@ -168,40 +178,52 @@ EI_IMPULSE_ERROR run_nn_inference_image_quantized(
 
     EI_IMPULSE_ERROR fill_res = EI_IMPULSE_OK;
 
-    if (impulse->object_detection) {
-        switch (impulse->object_detection_last_layer) {
+    if (block_config->object_detection) {
+        switch (block_config->object_detection_last_layer) {
             case EI_CLASSIFIER_LAST_LAYER_FOMO: {
-                #if EI_CLASSIFIER_TFLITE_OUTPUT_QUANTIZED == 1
-                    fill_res = fill_result_struct_i8_fomo(impulse, result, infer_result,
-                        graph_config->output_zeropoint, graph_config->output_scale,
-                        impulse->fomo_output_size, impulse->fomo_output_size);
-                #else
+                if (block_config->quantized == 1) {
+                    fill_res = fill_result_struct_i8_fomo(
+                        impulse,
+                        block_config,
+                        result,
+                        infer_result,
+                        graph_config->output_zeropoint,
+                        graph_config->output_scale,
+                        impulse->fomo_output_size,
+                        impulse->fomo_output_size);
+                }
+                else {
                     ei_printf("ERR: TensaiFlow does not support float32 inference\n");
                     return EI_IMPULSE_UNSUPPORTED_INFERENCING_ENGINE;
-                #endif
+                }
             break;
             }
             default: {
                 ei_printf("ERR: Unsupported object detection last layer (%d)\n",
-                    impulse->object_detection_last_layer);
+                    block_config->object_detection_last_layer);
                 return EI_IMPULSE_UNSUPPORTED_INFERENCING_ENGINE;
             }
         }
     }
     else {
-        #if EI_CLASSIFIER_TFLITE_OUTPUT_QUANTIZED == 1
-            fill_res = fill_result_struct_i8(impulse, result, infer_result,
-                graph_config->output_zeropoint, graph_config->output_scale, debug);
-        #else
+        if (block_config->quantized == 1) {
+            fill_res = fill_result_struct_i8(
+                impulse,
+                result,
+                infer_result,
+                graph_config->output_zeropoint,
+                graph_config->output_scale,
+                debug);
+        }
+        else {
             ei_printf("ERR: TensaiFlow does not support float32 inference\n");
             return EI_IMPULSE_UNSUPPORTED_INFERENCING_ENGINE;
-        #endif
+        }
     }
 
     if (fill_res != EI_IMPULSE_OK) {
         return fill_res;
     }
-
 
     result->timing.classification_us = ei_read_timer_us() - ctx_start_us;
     result->timing.classification = (int)(result->timing.classification_us / 1000);

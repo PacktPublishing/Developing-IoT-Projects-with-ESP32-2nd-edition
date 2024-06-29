@@ -1,7 +1,3 @@
-// https://docs.espressif.com/projects/esp-idf/en/v4.4.6/esp32s3/api-guides/memory-types.html
-// https://docs.espressif.com/projects/esp-idf/en/v4.4.6/esp32s3/api-guides/performance/ram-usage.html
-// https://docs.espressif.com/projects/esp-idf/en/v4.4.6/esp32s3/api-guides/performance/size.html
-
 #pragma once
 
 #include <cstring>
@@ -67,7 +63,7 @@ namespace app
             m_detect_task_buffer = new uint8_t[DETECT_TASK_BUFF_SIZE];
             m_action_task_buffer = new uint8_t[ACTION_TASK_BUFF_SIZE];
 
-            esp_board_init(AUDIO_HAL_16K_SAMPLES, 1, 16);
+            esp_board_init(16000, 1, 16);
             m_afe_handle = const_cast<esp_afe_sr_iface_t *>(&ESP_AFE_VC_HANDLE);
             afe_config_t afe_config = defaultAfeConfig();
             m_afe_data = m_afe_handle->create_from_config(&afe_config);

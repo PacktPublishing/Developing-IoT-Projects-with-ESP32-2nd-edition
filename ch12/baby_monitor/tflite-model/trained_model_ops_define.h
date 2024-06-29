@@ -84,5 +84,15 @@
 #define EI_TFLITE_DISABLE_STRIDED_SLICE_OUT_I16   1
 #define EI_TFLITE_DISABLE_STRIDED_SLICE_OUT_F32   1
 #define EI_TFLITE_DISABLE_STRIDED_SLICE_OUT_BOOL  1
+#define EI_TFLITE_DISABLE_TreeEnsembleClassifier_IN_U8     1
+#define EI_TFLITE_DISABLE_TreeEnsembleClassifier_IN_I8     1
+#define EI_TFLITE_DISABLE_TreeEnsembleClassifier_IN_I16    1
+#define EI_TFLITE_DISABLE_TreeEnsembleClassifier_IN_F32    1
+#define EI_TFLITE_DISABLE_TreeEnsembleClassifier_IN_BOOL   1
+#define EI_TFLITE_DISABLE_TreeEnsembleClassifier_OUT_U8    1
+#define EI_TFLITE_DISABLE_TreeEnsembleClassifier_OUT_I8    1
+#define EI_TFLITE_DISABLE_TreeEnsembleClassifier_OUT_I16   1
+#define EI_TFLITE_DISABLE_TreeEnsembleClassifier_OUT_F32   1
+#define EI_TFLITE_DISABLE_TreeEnsembleClassifier_OUT_BOOL  1
 
 #endif // EI_TFLITE_MODEL_OPS_DEFINES_H

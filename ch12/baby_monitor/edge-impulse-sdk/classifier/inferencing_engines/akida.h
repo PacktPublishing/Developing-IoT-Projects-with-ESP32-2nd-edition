@@ -51,7 +51,7 @@
 #include "tensorflow-lite/tensorflow/lite/kernels/register.h"
 #include "tensorflow-lite/tensorflow/lite/model.h"
 #include "tensorflow-lite/tensorflow/lite/optional_debug_tools.h"
-#include "edge-impulse-sdk/tensorflow/lite/kernels/tree_ensemble_classifier.h"
+#include "edge-impulse-sdk/tensorflow/lite/kernels/custom/tree_ensemble_classifier.h"
 #include "edge-impulse-sdk/classifier/ei_model_types.h"
 #include "edge-impulse-sdk/porting/ei_classifier_porting.h"
 #include "edge-impulse-sdk/classifier/ei_fill_result_struct.h"
@@ -125,6 +125,11 @@ bool init_akida(const uint8_t *model_arr, size_t model_arr_size, bool debug)
         return false;
     }
 
+    if(debug) {
+        std::string ver = akida.attr("__version__").cast<std::string>();
+        ei_printf("DEBUG: Akida version: %s\n", ver.c_str());
+    }
+
     py::object Model = akida.attr("Model");
 
     // deploy akida model file into temporary file
@@ -143,6 +148,7 @@ bool init_akida(const uint8_t *model_arr, size_t model_arr_size, bool debug)
     }
     catch (py::error_already_set &e) {
         ei_printf("ERR: Can't load model file from %s\n", model_file_path);
+        ei_printf("ERR: %s\n", e.what());
         return false;
     }
 
@@ -207,6 +213,7 @@ bool init_akida(const uint8_t *model_arr, size_t model_arr_size, bool debug)
     }
     catch (py::error_already_set &e) {
         ei_printf("ERR: Can't load the ML model onto the AKD1000 SoC\n");
+        ei_printf("ERR: %s\n", e.what());
         return false;
     }
 #elif (defined(EI_CLASSIFIER_USE_AKIDA_SOFTWARE) && (EI_CLASSIFIER_USE_AKIDA_SOFTWARE == 1))
@@ -256,13 +263,17 @@ void debug_print(const std::vector<T> vec, const int val_per_row = 3)
  */
 EI_IMPULSE_ERROR run_nn_inference(
     const ei_impulse_t *impulse,
-    ei::matrix_t *fmatrix,
+    ei_feature_t *fmatrix,
+    uint32_t learn_block_index,
+    uint32_t* input_block_ids,
+    uint32_t input_block_ids_size,
     ei_impulse_result_t *result,
     void *config_ptr,
-    bool debug = false)
+    bool debug)
 {
     ei_learning_block_config_tflite_graph_t *block_config = ((ei_learning_block_config_tflite_graph_t*)config_ptr);
     ei_config_tflite_graph_t *graph_config = ((ei_config_tflite_graph_t*)block_config->graph_config);
+
     EI_IMPULSE_ERROR fill_res = EI_IMPULSE_OK;
 
     // init Python embedded interpreter (should be called once!)
@@ -292,12 +303,27 @@ EI_IMPULSE_ERROR run_nn_inference(
      */
     auto r = input_data.mutable_unchecked<4>();
     float temp;
-    for (py::ssize_t x = 0; x < r.shape(1); x++) {
-        for (py::ssize_t y = 0; y < r.shape(2); y++) {
-            for(py::ssize_t z = 0; z < r.shape(3); z++) {
-                temp = (fmatrix->buffer[x * r.shape(2) * r.shape(3) + y * r.shape(3) + z] * scale);
-                temp = std::max(0.0f, std::min(temp, 255.0f));
-                r(0, x, y, z) = (uint8_t)(temp / down_scale);
+
+    size_t mtx_size = impulse->dsp_blocks_size + impulse->learning_blocks_size;
+    for (size_t i = 0; i < input_block_ids_size; i++) {
+        uint16_t cur_mtx = input_block_ids[i];
+#if EI_CLASSIFIER_SINGLE_FEATURE_INPUT == 0
+        ei::matrix_t* matrix = NULL;
+
+        if (!find_mtx_by_idx(fmatrix, &matrix, cur_mtx, mtx_size)) {
+            ei_printf("ERR: Cannot find matrix with id %zu\n", cur_mtx);
+            return EI_IMPULSE_INVALID_SIZE;
+        }
+#else
+        ei::matrix_t* matrix = fmatrix[0].matrix;
+#endif
+        for (py::ssize_t x = 0; x < r.shape(1); x++) {
+            for (py::ssize_t y = 0; y < r.shape(2); y++) {
+                for(py::ssize_t z = 0; z < r.shape(3); z++) {
+                    temp = (matrix->buffer[x * r.shape(2) * r.shape(3) + y * r.shape(3) + z] * scale);
+                    temp = std::max(0.0f, std::min(temp, 255.0f));
+                    r(0, x, y, z) = (uint8_t)(temp / down_scale);
+                }
             }
         }
     }
@@ -327,7 +353,7 @@ EI_IMPULSE_ERROR run_nn_inference(
     std::vector<float> potentials_v;// = potentials.cast<std::vector<float>>();
 
     // TODO: output conversion depending on output shape?
-    if (impulse->object_detection == false) {
+    if (block_config->object_detection == false) {
         potentials_v = potentials.squeeze().cast<std::vector<float>>();
     }
     else {
@@ -342,8 +368,10 @@ EI_IMPULSE_ERROR run_nn_inference(
         }
     }
 
-    // apply softmax, becuase Akida is not supporting this operation
-    tflite::reference_ops::Softmax(dummy_params, softmax_shape, potentials_v.data(), softmax_shape, potentials_v.data());
+    if(block_config->object_detection_last_layer != EI_CLASSIFIER_LAST_LAYER_YOLOV2) {
+        // apply softmax, becuase Akida is not supporting this operation
+        tflite::reference_ops::Softmax(dummy_params, softmax_shape, potentials_v.data(), softmax_shape, potentials_v.data());
+    }
 
     if(debug == true) {
         ei_printf("After softmax:\n");
@@ -370,30 +398,40 @@ EI_IMPULSE_ERROR run_nn_inference(
     engine_info << "Power consumption: " << std::fixed << std::setprecision(2) << active_power << " mW\n";
     engine_info << "Inferences per second: " << (1000000 / result->timing.classification_us);
 
-    if (impulse->object_detection) {
-        switch (impulse->object_detection_last_layer) {
+    if (block_config->object_detection) {
+        switch (block_config->object_detection_last_layer) {
             case EI_CLASSIFIER_LAST_LAYER_FOMO: {
                 fill_res = fill_result_struct_f32_fomo(
                     impulse,
+                    block_config,
                     result,
                     potentials_v.data(),
                     impulse->fomo_output_size,
                     impulse->fomo_output_size);
                 break;
             }
+            case EI_CLASSIFIER_LAST_LAYER_YOLOV2: {
+                fill_res = fill_result_struct_f32_yolov2(
+                    impulse,
+                    block_config,
+                    result,
+                    potentials_v.data(),
+                    impulse->tflite_output_features_count);
+                break;
+            }
             case EI_CLASSIFIER_LAST_LAYER_SSD: {
                 ei_printf("ERR: MobileNet SSD models are not implemented for Akida (%d)\n",
-                    impulse->object_detection_last_layer);
+                    block_config->object_detection_last_layer);
                 return EI_IMPULSE_UNSUPPORTED_INFERENCING_ENGINE;
             }
             case EI_CLASSIFIER_LAST_LAYER_YOLOV5: {
                 ei_printf("ERR: YOLO v5 models are not implemented for Akida (%d)\n",
-                    impulse->object_detection_last_layer);
+                    block_config->object_detection_last_layer);
                 return EI_IMPULSE_UNSUPPORTED_INFERENCING_ENGINE;
             }
             default: {
                 ei_printf("ERR: Unsupported object detection last layer (%d)\n",
-                    impulse->object_detection_last_layer);
+                    block_config->object_detection_last_layer);
                 return EI_IMPULSE_UNSUPPORTED_INFERENCING_ENGINE;
             }
         }
@@ -514,12 +552,16 @@ __attribute__((unused)) int extract_tflite_features(signal_t *signal, matrix_t *
 
     ei_learning_block_config_tflite_graph_t ei_learning_block_config = {
         .implementation_version = 1,
+        .classification_mode = EI_CLASSIFIER_CLASSIFICATION_MODE_DSP,
         .block_id = dsp_config->block_id,
         .object_detection = false,
         .object_detection_last_layer = EI_CLASSIFIER_LAST_LAYER_UNKNOWN,
         .output_data_tensor = 0,
         .output_labels_tensor = 255,
         .output_score_tensor = 255,
+        .threshold = 0,
+        .quantized = 0,
+        .compiled = 1,
         .graph_config = &ei_config_tflite_graph_0
     };
 

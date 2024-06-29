@@ -298,7 +298,7 @@ void SoftmaxQuantized(TfLiteContext* context, const TfLiteEvalTensor* input,
 #if EI_TFLITE_DISABLE_SOFTMAX_IN_I8
       TF_LITE_KERNEL_LOG(context, "Type %s (%d) not supported.",
                       TfLiteTypeGetName(input->type), input->type);
-      return kTfLiteError;
+      return;
 #endif
     if (output->type == kTfLiteInt16) {
 #if EI_TFLITE_DISABLE_SOFTMAX_OUT_I16

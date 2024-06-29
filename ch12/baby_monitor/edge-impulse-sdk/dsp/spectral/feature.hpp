@@ -304,6 +304,9 @@ public:
     {
         // we want to find n such that fcutoff < sample_f / fft * n ( or > for high pass )
         // also, + - half bin width (sample_f/(fft*2)) for high / low pass
+        if (filter_cutoff > sampling_freq / 2) {
+            filter_cutoff = sampling_freq / 2;
+        }
         float bin = filter_cutoff * fft_length / sampling_freq;
         if (is_high_pass) {
             *start_bin = static_cast<size_t>(bin - 0.5) + 1; // add one b/c we want to always round up
@@ -575,9 +578,11 @@ public:
     static int extract_spectral_analysis_features_v4(
         matrix_t *input_matrix,
         matrix_t *output_matrix,
-        ei_dsp_config_spectral_analysis_t *config,
+        ei_dsp_config_spectral_analysis_t *config_p,
         const float sampling_freq)
     {
+        auto config_copy = *config_p;
+        auto config = &config_copy;
         if (strcmp(config->analysis_type, "Wavelet") == 0) {
             return wavelet::extract_wavelet_features(input_matrix, output_matrix, config, sampling_freq);
         }
@@ -610,6 +615,29 @@ public:
 
             float new_sampling_freq = sampling_freq / config->input_decimation_ratio;
 
+            // filter here, before decimating, instead of inside extract_spec_features
+            if (strcmp(config->filter_type, "low") == 0) {
+                if( config->filter_order ) {
+                    EI_TRY(spectral::processing::butterworth_lowpass_filter(
+                        input_matrix,
+                        new_sampling_freq,
+                        config->filter_cutoff,
+                        config->filter_order));
+                }
+            }
+            else if (strcmp(config->filter_type, "high") == 0) {
+                if( config->filter_order ) {
+                    EI_TRY(spectral::processing::butterworth_highpass_filter(
+                        input_matrix,
+                        new_sampling_freq,
+                        config->filter_cutoff,
+                        config->filter_order));
+                }
+            }
+            
+            // set the filter order to 0, so that we won't double filter
+            config->filter_order = 0;
+
             // do this before extract_spec_features because extract_spec_features modifies the matrix
             constexpr size_t decimation = 10;
             const size_t decimated_size =
@@ -626,6 +654,7 @@ public:
                 false);
 
             if (n_features > 0 && config->extra_low_freq) {
+                // disable filtering post decimation
                 matrix_t lf_features(1, output_matrix->rows * output_matrix->cols - n_features,
                     output_matrix->buffer + n_features);
 

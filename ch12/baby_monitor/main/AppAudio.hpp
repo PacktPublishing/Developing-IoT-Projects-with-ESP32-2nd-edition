@@ -212,26 +212,5 @@ namespace app
 
         afe_config.aec_init = false;
         return afe_config;
-
-        // return {
-        //     .aec_init = false,
-        //     .se_init = true,
-        //     .vad_init = false,
-        //     .wakenet_init = false,
-        //     .voice_communication_init = true,
-        //     .voice_communication_agc_init = false,
-        //     .voice_communication_agc_gain = 15,
-        //     .vad_mode = VAD_MODE_3,
-        //     .wakenet_model_name = nullptr,
-        //     .wakenet_mode = DET_MODE_2CH_90,
-        //     .afe_mode = SR_MODE_LOW_COST,
-        //     .afe_perferred_core = 0,
-        //     .afe_perferred_priority = 5,
-        //     .afe_ringbuf_size = 50,
-        //     .memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM,
-        //     .agc_mode = AFE_MN_PEAK_AGC_MODE_2,
-        //     .pcm_config = {3, 2, 1, 16000},
-        //     .debug_init = false,
-        // };
     }
 }

@@ -25,6 +25,7 @@ limitations under the License.
 #include "edge-impulse-sdk/tensorflow/lite/kernels/internal/types.h"
 #include "edge-impulse-sdk/tensorflow/lite/kernels/kernel_util.h"
 #include "edge-impulse-sdk/tensorflow/lite/micro/kernels/kernel_util.h"
+#include "edge-impulse-sdk/tensorflow/lite/micro/micro_log.h"
 
 namespace tflite {
 namespace {
@@ -45,7 +46,10 @@ using TransformFunc = float (*)(float);
 template <typename T>
 void PopulateLookupTable(const TfLiteTensor* input, const TfLiteTensor* output,
                          const TransformFunc transform, OpData* data) {
-  if (sizeof(T) != 1) TF_LITE_FATAL("Lookup table valid only for 8bit");
+  if (sizeof(T) != 1) {
+    MicroPrintf("Lookup table valid only for 8bit");
+    TFLITE_ABORT;
+  }
 
   const float inverse_scale = 1 / output->params.scale;
   int32_t maxval = std::numeric_limits<T>::max();
@@ -76,13 +80,16 @@ void EvalUsingLookupTable(const OpData* data, const TfLiteEvalTensor* input,
 }
 
 TfLiteStatus CalculateOpData(TfLiteContext* context, TfLiteNode* node) {
+  MicroContext* micro_context = GetMicroContext(context);
+
   TF_LITE_ENSURE_EQ(context, NumInputs(node), 1);
   TF_LITE_ENSURE_EQ(context, NumOutputs(node), 1);
-  const TfLiteTensor* input;
-  TF_LITE_ENSURE_OK(context, GetInputSafe(context, node, kInputTensor, &input));
-  TfLiteTensor* output;
-  TF_LITE_ENSURE_OK(context,
-                    GetOutputSafe(context, node, kOutputTensor, &output));
+  TfLiteTensor* input =
+      micro_context->AllocateTempInputTensor(node, kInputTensor);
+  TF_LITE_ENSURE(context, input != nullptr);
+  TfLiteTensor* output =
+      micro_context->AllocateTempOutputTensor(node, kOutputTensor);
+  TF_LITE_ENSURE(context, output != nullptr);
   TF_LITE_ENSURE_TYPES_EQ(context, input->type, output->type);
 
   // Use LUT to handle quantized elu path.
@@ -93,7 +100,8 @@ TfLiteStatus CalculateOpData(TfLiteContext* context, TfLiteNode* node) {
     };
     PopulateLookupTable<int8_t>(input, output, transform, data);
   }
-
+  micro_context->DeallocateTempTfLiteTensor(input);
+  micro_context->DeallocateTempTfLiteTensor(output);
   return kTfLiteOk;
 }
 
@@ -128,9 +136,8 @@ TfLiteStatus EluEval(TfLiteContext* context, TfLiteNode* node) {
       return kTfLiteOk;
     }
     default:
-      TF_LITE_KERNEL_LOG(
-          context, "ELU only supports float32 and int8 currently, got %s.",
-          TfLiteTypeGetName(input->type));
+      MicroPrintf("ELU only supports float32 and int8 currently, got %s.",
+                  TfLiteTypeGetName(input->type));
       return kTfLiteError;
   }
 }
@@ -138,14 +145,7 @@ TfLiteStatus EluEval(TfLiteContext* context, TfLiteNode* node) {
 }  // namespace
 
 TfLiteRegistration Register_ELU() {
-  return {/*init=*/EluInit,
-          /*free=*/nullptr,
-          /*prepare=*/EluPrepare,
-          /*invoke=*/EluEval,
-          /*profiling_string=*/nullptr,
-          /*builtin_code=*/0,
-          /*custom_name=*/nullptr,
-          /*version=*/0};
+  return tflite::micro::RegisterOp(EluInit, EluPrepare, EluEval);
 }
 
 }  // namespace tflite

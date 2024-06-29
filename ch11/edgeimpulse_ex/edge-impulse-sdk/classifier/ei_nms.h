@@ -26,7 +26,7 @@
 #include "edge-impulse-sdk/classifier/ei_classifier_types.h"
 #include "edge-impulse-sdk/porting/ei_classifier_porting.h"
 
-#if (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_YOLOV5) || (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_YOLOV5_V5_DRPAI) || (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_YOLOX)
+#if (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_YOLOV5) || (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_YOLOV5_V5_DRPAI) || (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_YOLOX) || (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_TAO_RETINANET) || (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_TAO_SSD) || (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_TAO_YOLOV3) || (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_TAO_YOLOV4) || (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_YOLOV2)
 
 // The code below comes from tensorflow/lite/kernels/internal/reference/non_max_suppression.h
 // Copyright 2019 The TensorFlow Authors.  All rights reserved.
@@ -190,7 +190,7 @@ static inline void NonMaxSuppression(const float* boxes, const int num_boxes,
         }
         ++*num_selected_indices;
       }
-      if (next_candidate.score > score_threshold) {
+      if ((soft_nms_sigma > 0.0) && (next_candidate.score > score_threshold)) {
         // Soft suppression might have occurred and current score is still
         // greater than score_threshold; add next_candidate back onto priority
         // queue.
@@ -203,43 +203,27 @@ static inline void NonMaxSuppression(const float* boxes, const int num_boxes,
 /**
  * Run non-max suppression over the results array (for bounding boxes)
  */
-EI_IMPULSE_ERROR ei_run_nms(std::vector<ei_impulse_result_bounding_box_t> *results) {
+EI_IMPULSE_ERROR ei_run_nms(
+    const ei_impulse_t *impulse,
+    std::vector<ei_impulse_result_bounding_box_t> *results,
+    float *boxes,
+    float *scores,
+    int *classes,
+    size_t bb_count,
+    bool clip_boxes,
+    bool debug) {
 
-    size_t bb_count = 0;
-    for (size_t ix = 0; ix < results->size(); ix++) {
-        auto bb = results->at(ix);
-        if (bb.value == 0) {
-            continue;
-        }
-        bb_count++;
+    if (bb_count < 1) {
+        return EI_IMPULSE_OK;
     }
 
-    float *boxes = (float*)malloc(4 * bb_count * sizeof(float));
-    float *scores = (float*)malloc(1 * bb_count * sizeof(float));
-    int *selected_indices = (int*)malloc(1 * bb_count * sizeof(int));
-    float *selected_scores = (float*)malloc(1 * bb_count * sizeof(float));
+    int *selected_indices = (int*)ei_malloc(1 * bb_count * sizeof(int));
+    float *selected_scores = (float*)ei_malloc(1 * bb_count * sizeof(float));
 
-    if (!scores || !boxes || !selected_indices || !selected_scores) {
-        free(boxes);
-        free(scores);
-        free(selected_indices);
-        free(selected_scores);
+    if (!scores || !boxes || !selected_indices || !selected_scores || !classes) {
+        ei_free(selected_indices);
+        ei_free(selected_scores);
         return EI_IMPULSE_OUT_OF_MEMORY;
-    }
-
-    size_t box_ix = 0;
-    for (size_t ix = 0; ix < results->size(); ix++) {
-        auto bb = results->at(ix);
-        if (bb.value == 0) {
-            continue;
-        }
-        boxes[(box_ix * 4) + 0] = bb.y;
-        boxes[(box_ix * 4) + 1] = bb.x;
-        boxes[(box_ix * 4) + 2] = bb.y + bb.height;
-        boxes[(box_ix * 4) + 3] = bb.x + bb.width;
-        scores[box_ix] = bb.value;
-
-        box_ix++;
     }
 
     //  boxes: box encodings in format [y1, x1, y2, x2], shape: [num_boxes, 4]
@@ -257,8 +241,8 @@ EI_IMPULSE_ERROR ei_run_nms(std::vector<ei_impulse_result_bounding_box_t> *resul
         bb_count, // num_boxes
         (const float*)scores, // scores
         bb_count, // max_output_size
-        0.2f, // iou_threshold
-        0.0f, // score_threshold
+        impulse->object_detection_nms.iou_threshold, // iou_threshold
+        impulse->object_detection_nms.confidence_threshold, // score_threshold
         0.0f, // soft_nms_sigma
         selected_indices,
         selected_scores,
@@ -267,18 +251,34 @@ EI_IMPULSE_ERROR ei_run_nms(std::vector<ei_impulse_result_bounding_box_t> *resul
     std::vector<ei_impulse_result_bounding_box_t> new_results;
 
     for (size_t ix = 0; ix < (size_t)num_selected_indices; ix++) {
-        auto bb = results->at(selected_indices[ix]);
 
-        printf("Found bb with label %s\n", bb.label);
+        int out_ix = selected_indices[ix];
+        ei_impulse_result_bounding_box_t bb;
+        bb.label  = impulse->categories[classes[out_ix]];
+        bb.value  = selected_scores[ix];
 
-        ei_impulse_result_bounding_box_t r;
-        r.label = bb.label;
-        r.x = bb.x;
-        r.y = bb.y;
-        r.width = bb.width;
-        r.height = bb.height;
-        r.value = selected_scores[ix];
-        new_results.push_back(r);
+        float ymin = boxes[(out_ix * 4) + 0];
+        float xmin = boxes[(out_ix * 4) + 1];
+        float ymax = boxes[(out_ix * 4) + 2];
+        float xmax = boxes[(out_ix * 4) + 3];
+
+        if (clip_boxes) {
+            ymin = std::min(std::max(ymin, 0.0f), (float)impulse->input_height);
+            xmin = std::min(std::max(xmin, 0.0f), (float)impulse->input_width);
+            ymax = std::min(std::max(ymax, 0.0f), (float)impulse->input_height);
+            xmax = std::min(std::max(xmax, 0.0f), (float)impulse->input_width);
+        }
+
+        bb.y      = static_cast<uint32_t>(ymin);
+        bb.x      = static_cast<uint32_t>(xmin);
+        bb.height = static_cast<uint32_t>(ymax) - bb.y;
+        bb.width  = static_cast<uint32_t>(xmax) - bb.x;
+        new_results.push_back(bb);
+
+        if (debug) {
+          ei_printf("Found bb with label %s\n", bb.label);
+        }
+
     }
 
     results->clear();
@@ -287,14 +287,106 @@ EI_IMPULSE_ERROR ei_run_nms(std::vector<ei_impulse_result_bounding_box_t> *resul
         results->push_back(new_results[ix]);
     }
 
-    free(boxes);
-    free(scores);
-    free(selected_indices);
-    free(selected_scores);
+    ei_free(selected_indices);
+    ei_free(selected_scores);
 
     return EI_IMPULSE_OK;
+
 }
 
-#endif // #if (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_YOLOV5) || (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_YOLOV5_V5_DRPAI) || (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_YOLOX)
+/**
+ * Run non-max suppression over the results array (for bounding boxes)
+ */
+EI_IMPULSE_ERROR ei_run_nms(
+    const ei_impulse_t *impulse,
+    std::vector<ei_impulse_result_bounding_box_t> *results,
+    bool clip_boxes,
+    bool debug) {
+
+    size_t bb_count = 0;
+    for (size_t ix = 0; ix < results->size(); ix++) {
+        auto bb = results->at(ix);
+        if (bb.value == 0) {
+            continue;
+        }
+        bb_count++;
+    }
+
+    if (bb_count < 1) {
+        return EI_IMPULSE_OK;
+    }
+
+    float *boxes = (float*)ei_malloc(4 * bb_count * sizeof(float));
+    float *scores = (float*)ei_malloc(1 * bb_count * sizeof(float));
+    int *classes = (int*) ei_malloc(bb_count * sizeof(int));
+
+    if (!scores || !boxes || !classes) {
+        ei_free(boxes);
+        ei_free(scores);
+        ei_free(classes);
+        return EI_IMPULSE_OUT_OF_MEMORY;
+    }
+
+    size_t box_ix = 0;
+    for (size_t ix = 0; ix < results->size(); ix++) {
+        auto bb = results->at(ix);
+        if (bb.value == 0) {
+            continue;
+        }
+        boxes[(box_ix * 4) + 0] = bb.y;
+        boxes[(box_ix * 4) + 1] = bb.x;
+        boxes[(box_ix * 4) + 2] = bb.y + bb.height;
+        boxes[(box_ix * 4) + 3] = bb.x + bb.width;
+        scores[box_ix] = bb.value;
+
+        for (size_t j = 0; j < impulse->label_count; j++) {
+          if (strcmp(impulse->categories[j], bb.label) == 0)
+          classes[box_ix] = j;
+        }
+
+        box_ix++;
+    }
+
+    EI_IMPULSE_ERROR nms_res = ei_run_nms(impulse, results,
+                                          boxes, scores,
+                                          classes, bb_count,
+                                          clip_boxes,
+                                          debug);
+
+
+    ei_free(boxes);
+    ei_free(scores);
+    ei_free(classes);
+
+    return nms_res;
+
+}
+
+/**
+ * Run non-max suppression over the results array (for bounding boxes)
+ */
+EI_IMPULSE_ERROR ei_run_nms(
+    const ei_impulse_t *impulse,
+    std::vector<ei_impulse_result_bounding_box_t> *results,
+    bool debug = false) {
+  return ei_run_nms(impulse, results, true, debug);
+}
+
+/**
+ * Run non-max suppression over the results array (for bounding boxes)
+ */
+EI_IMPULSE_ERROR ei_run_nms(std::vector<ei_impulse_result_bounding_box_t> *results, bool debug = false) {
+#if EI_CLASSIFIER_HAS_MODEL_VARIABLES == 1
+  auto& impulse = *ei_default_impulse.impulse;
+#else
+  const ei_impulse_t impulse = {
+    .object_detection_nms.confidence_threshold = 0.0f,
+    .object_detection_nms.iou_threshold = 0.2f
+  };
+#endif
+  return ei_run_nms(&impulse, results, debug);
+}
+
+#endif // #if (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_YOLOV5) || (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_YOLOV5_V5_DRPAI) || (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_YOLOX) || (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_TAO_RETINANET) || (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_TAO_SSD) || (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_TAO_YOLOV3) || (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_TAO_YOLOV4)
 
 #endif // _EDGE_IMPULSE_NMS_H_

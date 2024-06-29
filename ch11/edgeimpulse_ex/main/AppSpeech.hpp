@@ -174,7 +174,7 @@ namespace app
         void init(AppSpeechParam cbs)
         {
             m_callbacks = cbs;
-            esp_board_init(AUDIO_HAL_16K_SAMPLES, 1, 16);
+            esp_board_init(16000, 1, 16);
             m_afe_handle = const_cast<esp_afe_sr_iface_t *>(&ESP_AFE_VC_HANDLE);
             afe_config_t afe_config = defaultAfeConfig();
             m_afe_data = m_afe_handle->create_from_config(&afe_config);

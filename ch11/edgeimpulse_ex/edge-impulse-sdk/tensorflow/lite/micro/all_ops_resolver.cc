@@ -1,4 +1,4 @@
-/* Copyright 2018 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2022 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,32 +26,45 @@ AllOpsResolver::AllOpsResolver() {
   AddAddN();
   AddArgMax();
   AddArgMin();
+  AddAssignVariable();
   AddAveragePool2D();
   AddBatchMatMul();
   AddBatchToSpaceNd();
+  AddBroadcastArgs();
+  AddBroadcastTo();
+  AddCallOnce();
+  AddCast();
   AddCeil();
   AddComplexAbs();
+  AddCircularBuffer();
   AddConcatenation();
   AddConv2D();
   AddCos();
+  AddCumSum();
+  AddDepthToSpace();
   AddDepthwiseConv2D();
   AddDequantize();
-  // AddDetectionPostprocess();
+  AddDetectionPostprocess();
   AddDiv();
   AddElu();
   AddEqual();
   AddEthosU();
   AddExp();
   AddExpandDims();
+  AddFill();
   AddFloor();
+  AddFloorDiv();
+  AddFloorMod();
   AddFullyConnected();
 #ifndef TF_LITE_STATIC_MEMORY
   AddGather();
 #endif // TF_LITE_STATIC_MEMORY
+  AddGatherNd();
   AddGreater();
   AddGreaterEqual();
   AddHardSwish();
   AddImag();
+  AddIf();
   AddL2Normalization();
   AddL2Pool2D();
   AddLeakyRelu();
@@ -67,6 +80,7 @@ AllOpsResolver::AllOpsResolver() {
   AddMaximum();
   AddMean();
   AddMinimum();
+  AddMirrorPad();
   AddMul();
   AddNeg();
   AddNotEqual();
@@ -76,11 +90,13 @@ AllOpsResolver::AllOpsResolver() {
   AddPrelu();
   AddQuantize();
   AddReal();
+  AddReadVariable();
   AddReduceMax();
   AddReduceMin();
   AddRelu();
   AddRelu6();
   AddReshape();
+  AddResizeBilinear();
   AddResizeNearestNeighbor();
   AddRfft2D();
   AddRound();
@@ -94,6 +110,7 @@ AllOpsResolver::AllOpsResolver() {
   AddSlice();
   AddSoftmax();
   AddSpaceToBatchNd();
+  AddSpaceToDepth();
   AddSplit();
   AddSplitV();
   AddSqrt();
@@ -108,7 +125,11 @@ AllOpsResolver::AllOpsResolver() {
   AddTranspose();
   AddTransposeConv();
   AddTreeEnsembleClassifier();
+  AddUnidirectionalSequenceLstm();
   AddUnpack();
+  AddVarHandle();
+  AddWhile();
+  AddZerosLike();
 }
 
 }  // namespace tflite

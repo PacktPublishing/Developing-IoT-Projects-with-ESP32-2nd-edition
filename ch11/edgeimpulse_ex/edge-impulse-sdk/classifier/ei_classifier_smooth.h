@@ -79,7 +79,7 @@ const char* ei_classifier_smooth_update(ei_classifier_smooth_t *smooth, ei_impul
             reading = (int)ix;
         }
     }
-#if EI_CLASSIFIER_HAS_ANOMALY == 1
+#if EI_CLASSIFIER_HAS_ANOMALY
     if (result->anomaly >= smooth->anomaly_confidence) {
         reading = -2; // anomaly
     }

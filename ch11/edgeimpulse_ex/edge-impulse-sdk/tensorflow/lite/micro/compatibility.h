@@ -23,7 +23,9 @@ limitations under the License.
 // This macro needs to be included in all subclasses of a virtual base class in
 // the private section.
 
-// Patched by Edge Impulse, actually declaring `void operator delete(void* p) {}` yields compiler errors on some compilers
+// Patched by Edge Impulse,
+// actually declaring `void operator delete(void* p) {}`
+// yields compiler errors on some compilers
 #define TF_LITE_REMOVE_VIRTUAL_DELETE
 
 #endif  // TENSORFLOW_LITE_MICRO_COMPATIBILITY_H_

@@ -1,18 +1,19 @@
 /*
- * Copyright (c) 2022 Arm Limited. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
- * governing permissions and limitations under the License.
+ * SPDX-FileCopyrightText: Copyright 2019-2022 Arm Limited and/or its affiliates <open-source-office@arm.com>
  *
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the License); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an AS IS BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #ifndef PMU_ETHOSU_H
@@ -104,6 +105,15 @@ enum ethosu_pmu_event_type
     ETHOSU_PMU_AXI0_ENABLED_CYCLES,
     ETHOSU_PMU_AXI0_RD_STALL_LIMIT,
     ETHOSU_PMU_AXI0_WR_STALL_LIMIT,
+    ETHOSU_PMU_AXI_LATENCY_ANY,
+    ETHOSU_PMU_AXI_LATENCY_32,
+    ETHOSU_PMU_AXI_LATENCY_64,
+    ETHOSU_PMU_AXI_LATENCY_128,
+    ETHOSU_PMU_AXI_LATENCY_256,
+    ETHOSU_PMU_AXI_LATENCY_512,
+    ETHOSU_PMU_AXI_LATENCY_1024,
+    ETHOSU_PMU_ECC_DMA,
+    ETHOSU_PMU_ECC_SB0,
     ETHOSU_PMU_AXI1_RD_TRANS_ACCEPTED,
     ETHOSU_PMU_AXI1_RD_TRANS_COMPLETED,
     ETHOSU_PMU_AXI1_RD_DATA_BEAT_RECEIVED,
@@ -117,15 +127,6 @@ enum ethosu_pmu_event_type
     ETHOSU_PMU_AXI1_ENABLED_CYCLES,
     ETHOSU_PMU_AXI1_RD_STALL_LIMIT,
     ETHOSU_PMU_AXI1_WR_STALL_LIMIT,
-    ETHOSU_PMU_AXI_LATENCY_ANY,
-    ETHOSU_PMU_AXI_LATENCY_32,
-    ETHOSU_PMU_AXI_LATENCY_64,
-    ETHOSU_PMU_AXI_LATENCY_128,
-    ETHOSU_PMU_AXI_LATENCY_256,
-    ETHOSU_PMU_AXI_LATENCY_512,
-    ETHOSU_PMU_AXI_LATENCY_1024,
-    ETHOSU_PMU_ECC_DMA,
-    ETHOSU_PMU_ECC_SB0,
     ETHOSU_PMU_ECC_SB1,
 
     ETHOSU_PMU_SENTINEL // End-marker (not event)
@@ -151,6 +152,12 @@ void ETHOSU_PMU_Disable(struct ethosu_driver *drv);
  * \param [in]    type    Event to count
  */
 void ETHOSU_PMU_Set_EVTYPER(struct ethosu_driver *drv, uint32_t num, enum ethosu_pmu_event_type type);
+
+/**
+ * \brief   Get number of PMU event counters
+ * \return                Number of event counters
+ */
+uint32_t ETHOSU_PMU_Get_NumEventCounters(void);
 
 /**
  * \brief   Get event to count for PMU eventer counter
@@ -301,6 +308,16 @@ void ETHOSU_PMU_PMCCNTR_CFG_Set_Start_Event(struct ethosu_driver *drv, enum etho
  * \note   Sets the event number that stops the cycle counter.
  */
 void ETHOSU_PMU_PMCCNTR_CFG_Set_Stop_Event(struct ethosu_driver *drv, enum ethosu_pmu_event_type stop_event);
+
+/**
+ * \brief   Read qread register
+ */
+uint32_t ETHOSU_PMU_Get_QREAD(struct ethosu_driver *drv);
+
+/**
+ * \brief   Read status register
+ */
+uint32_t ETHOSU_PMU_Get_STATUS(struct ethosu_driver *drv);
 
 #ifdef __cplusplus
 }

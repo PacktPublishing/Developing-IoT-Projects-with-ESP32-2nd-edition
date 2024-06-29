@@ -84,9 +84,6 @@ public:
                 EIDSP_ERR(ret);
             }
 
-            // it might be that everything is already normalized here...
-            bool all_between_min_1_and_1 = true;
-
             // now we have the signal and we can preemphasize
             for (size_t ix = 0; ix < length; ix++) {
                 float now = out_buffer[ix];
@@ -100,12 +97,6 @@ public:
                     out_buffer[ix] = now - (_cof * _prev_buffer[0]);
                 }
 
-                if (_rescale && all_between_min_1_and_1) {
-                    if (out_buffer[ix] < -1.0f || out_buffer[ix] > 1.0f) {
-                        all_between_min_1_and_1 = false;
-                    }
-                }
-
                 // roll through and overwrite last element
                 if (_shift != 1) {
                     numpy::roll(_prev_buffer, _shift, -1);
@@ -116,7 +107,7 @@ public:
             _next_offset_should_be += length;
 
             // rescale from [-1 .. 1] ?
-            if (_rescale && !all_between_min_1_and_1) {
+            if (_rescale) {
                 matrix_t scale_matrix(length, 1, out_buffer);
                 ret = numpy::scale(&scale_matrix, 1.0f / 32768.0f);
                 if (ret != 0) {
@@ -212,7 +203,7 @@ namespace processing {
      * @param frame_stride (float): The stride between frames.
      * @returns Number of frames required, or a negative number if an error occured
      */
-    static int calculate_signal_used(
+    __attribute__((unused)) static int calculate_signal_used(
         size_t signal_size,
         uint32_t sampling_frequency,
         float frame_length,
@@ -524,7 +515,7 @@ namespace processing {
      * then add a hard filter
      * @param features_matrix input feature matrix, will be modified in place
      */
-    static int spectrogram_normalization(matrix_t *features_matrix, int noise_floor_db) {
+    static int spectrogram_normalization(matrix_t *features_matrix, int noise_floor_db, bool clip_at_one) {
         const float noise = static_cast<float>(noise_floor_db * -1);
         const float noise_scale = 1.0f / (static_cast<float>(noise_floor_db * -1) + 12.0f);
 
@@ -539,7 +530,7 @@ namespace processing {
             f *= noise_scale;
             // clip again
             if (f < 0.0f) f = 0.0f;
-            else if (f > 1.0f) f = 1.0f;
+            else if (f > 1.0f && clip_at_one) f = 1.0f;
             features_matrix->buffer[ix] = f;
         }
 

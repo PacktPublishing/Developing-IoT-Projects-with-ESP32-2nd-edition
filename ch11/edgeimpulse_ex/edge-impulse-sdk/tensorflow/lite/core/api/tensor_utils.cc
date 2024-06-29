@@ -17,7 +17,7 @@ limitations under the License.
 
 #include <string.h>
 
-#include "edge-impulse-sdk/tensorflow/lite/c/common.h"
+#include "edge-impulse-sdk/tensorflow/lite/core/c/common.h"
 
 namespace tflite {
 

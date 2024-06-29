@@ -15,18 +15,19 @@ limitations under the License.
 #ifndef TENSORFLOW_LITE_KERNELS_INTERNAL_REFERENCE_INTEGER_OPS_MEAN_H_
 #define TENSORFLOW_LITE_KERNELS_INTERNAL_REFERENCE_INTEGER_OPS_MEAN_H_
 
+#include <algorithm>
+
 #include "edge-impulse-sdk/tensorflow/lite/kernels/internal/common.h"
 
 namespace tflite {
 namespace reference_integer_ops {
 
 template <typename integer_type>
-inline void MeanOrSum(const tflite::MeanParams& op_params, int32_t multiplier,
-                      int32_t shift, const RuntimeShape& unextended_input_shape,
-                      const integer_type* input_data, int32_t input_zero_point,
-                      const RuntimeShape& unextended_output_shape,
-                      integer_type* output_data, int32_t output_zero_point,
-                      bool compute_sum) {
+inline void Mean(const tflite::MeanParams& op_params, int32_t multiplier,
+                 int32_t shift, const RuntimeShape& unextended_input_shape,
+                 const integer_type* input_data, int32_t input_zero_point,
+                 const RuntimeShape& unextended_output_shape,
+                 integer_type* output_data, int32_t output_zero_point) {
   // Current implementation only supports dimension equals 4 and simultaneous
   // reduction over width and height.
   TFLITE_CHECK_EQ(unextended_input_shape.DimensionsCount(), 4);
@@ -62,10 +63,8 @@ inline void MeanOrSum(const tflite::MeanParams& op_params, int32_t multiplier,
         }
       }
       acc = MultiplyByQuantizedMultiplier(acc, multiplier, shift);
-      if (!compute_sum) {
-        acc = acc > 0 ? (acc + num_elements_in_axis / 2) / num_elements_in_axis
-                      : (acc - num_elements_in_axis / 2) / num_elements_in_axis;
-      }
+      acc = acc > 0 ? (acc + num_elements_in_axis / 2) / num_elements_in_axis
+                    : (acc - num_elements_in_axis / 2) / num_elements_in_axis;
       acc += output_zero_point;
       acc = std::min(std::max(acc, kMinInt), kMaxInt);
       output_data[Offset(output_shape, out_b, 0, 0, out_d)] =

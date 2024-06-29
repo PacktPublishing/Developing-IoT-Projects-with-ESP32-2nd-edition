@@ -4,13 +4,9 @@
 # CMakeLists in this exact order for cmake to work correctly
 cmake_minimum_required(VERSION 3.15)
 set(EXTRA_COMPONENT_DIRS 
-../components/esp-skainet/components/esp_codec_dev
-../components/esp-skainet/components/esp-dsp
-../components/esp-skainet/components/esp-sr
-../components/esp-skainet/components/hardware_driver
-../components/esp-skainet/components/led_strip
-../components/esp-skainet/components/perf_tester
-../components/esp-skainet/components/player
-../components/esp-skainet/components/sr_ringbuf)
+../components/esp-skainet/components/
+../components/esp-skainet-extra-components/
+)
+
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(speech_ex)

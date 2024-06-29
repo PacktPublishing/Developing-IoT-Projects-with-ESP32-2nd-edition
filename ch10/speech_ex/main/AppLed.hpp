@@ -3,9 +3,9 @@
 #include <cstdint>
 #include "app_led.h"
 
-#define APP_RED_PIN 13
-#define APP_GREEN_PIN 12
-#define APP_BLUE_PIN 11
+#define APP_RED_PIN gpio_num_t::GPIO_NUM_13
+#define APP_GREEN_PIN gpio_num_t::GPIO_NUM_12
+#define APP_BLUE_PIN gpio_num_t::GPIO_NUM_11
 
 #define RED(x) (uint8_t)(((x)&0xff0000) >> 16)
 #define GREEN(x) (uint8_t)(((x)&0x00ff00) >> 8)

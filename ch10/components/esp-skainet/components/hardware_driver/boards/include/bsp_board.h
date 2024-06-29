@@ -19,7 +19,6 @@
 
 #include <stdbool.h>
 #include "esp_err.h"
-#include "audio_hal.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 
@@ -44,6 +43,8 @@
     #include "esp32_s3_box_lite_board.h"
 #elif CONFIG_ESP32_S3_AFE_RASPBERRY_BOARD
     #include "esp32_s3_afe_raspberry_board.h"
+#elif CONFIG_ESP32_S3_BOX_3_BOARD
+    #include "esp32_s3_box_3_board.h"
 #else 
     #error "Please select type of dev board"
 #endif
@@ -93,7 +94,7 @@ esp_err_t bsp_sdcard_init(char *mount_point, size_t max_files);
  *    - ESP_OK: Success
  *    - Others: Fail
  */
-esp_err_t bsp_board_init(audio_hal_iface_samples_t sample_rate, int channel_format, int bits_per_chan);
+esp_err_t bsp_board_init(uint32_t sample_rate, int channel_format, int bits_per_chan);
 
 
 esp_err_t bsp_audio_play(const int16_t* data, int length, TickType_t ticks_to_wait);

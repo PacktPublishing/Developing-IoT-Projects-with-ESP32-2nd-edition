@@ -45,7 +45,7 @@ namespace app
     public:
         void start(void)
         {
-            esp_board_init(AUDIO_HAL_16K_SAMPLES, 1, 16);
+            esp_board_init(16000, 1, 16);
             m_led.init();
 
             m_models = esp_srmodel_init("model");

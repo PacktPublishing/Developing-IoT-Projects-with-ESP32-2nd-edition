@@ -10,3 +10,5 @@ set(EXTRA_COMPONENT_DIRS
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(speech_ex)
+
+idf_build_set_property(COMPILE_OPTIONS "-fdiagnostics-color=always" APPEND)

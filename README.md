@@ -1,6 +1,7 @@
 # Developing-IoT-Projects-with-ESP32, Second-edition
 This is the code repository for [Developing-IoT-Projects-with-ESP32, Second-edition](https://www.packtpub.com/product/developing-iot-projects-with-esp32-2nd-edition-second-edition/9781803237688), published by Packt.
 
+>**!! NEWS !!** The examples are updated for the newest devkit (ESP-S3-BOX-3) and ESP-IDF v5.2.2 on [this branch](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main-new)
 
 **Unlock the full Potential of ESP32 in IoT development to create production-grade smart devices**
 

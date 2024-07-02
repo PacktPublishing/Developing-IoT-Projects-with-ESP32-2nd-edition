@@ -1,6 +1,16 @@
 # Developing-IoT-Projects-with-ESP32, Second-edition
 This is the code repository for [Developing-IoT-Projects-with-ESP32, Second-edition](https://www.packtpub.com/product/developing-iot-projects-with-esp32-2nd-edition-second-edition/9781803237688), published by Packt.
 
+>**Important!**
+>This branch contains major updates to the examples in the book.   
+>
+>1. The devkits of this branch are:
+>    - [ESP-S3-BOX-3 - Successor of ESP-S3-Box-Lite](https://github.com/espressif/esp-box/blob/master/docs/hardware_overview/esp32_s3_box_3/hardware_overview_for_box_3.md)
+>    - [ESP32-C3-DevKitM-1](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32c3/esp32-c3-devkitm-1/user_guide.html#getting-started)
+>
+>2. The ESP-IDF version is now [v5.2.2](https://github.com/espressif/esp-idf/tree/v5.2.2). The documentation is [here](https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/index.html)
+>3. All other frameworks and libraries are updated to their latest master branches, compatible with ESP-IDF v5.2.2. (such as ESP-Rainmaker, LVGL, Edge-Impulse, AWS-IoT-Core, ESP-Skainet, ESP-ADF, and others)
+
 
 **Unlock the full Potential of ESP32 in IoT development to create production-grade smart devices**
 

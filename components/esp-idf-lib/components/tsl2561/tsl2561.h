@@ -1,3 +1,31 @@
+/*
+ * Copyright (c) 2016 Brian Schwind <https://github.com/bschwind>
+ * Copyright (c) 2018 Ruslan V. Uss <unclerus@gmail.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of itscontributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 /**
  * @file tsl2561.h
  * @defgroup tsl2561 tsl2561
@@ -7,8 +35,8 @@
  *
  * Ported from esp-open-rtos
  *
- * Copyright (C) 2016 Brian Schwind <https://github.com/bschwind>\n
- * Copyright (C) 2018 Ruslan V. Uss <unclerus@gmail.com>
+ * Copyright (c) 2016 Brian Schwind <https://github.com/bschwind>\n
+ * Copyright (c) 2018 Ruslan V. Uss <unclerus@gmail.com>
  *
  * BSD Licensed as described in the file LICENSE
  */
@@ -64,7 +92,8 @@ typedef struct
 } tsl2561_t;
 
 /**
- * Initialize device descriptior
+ * @brief Initialize device descriptor
+ *
  * @param dev Device descriptor
  * @param addr I2C device address, `TSL2561_I2C_ADDR_...` const
  * @param port I2C port
@@ -75,21 +104,24 @@ typedef struct
 esp_err_t tsl2561_init_desc(tsl2561_t *dev, uint8_t addr, i2c_port_t port, gpio_num_t sda_gpio, gpio_num_t scl_gpio);
 
 /**
- * Free device descriptor
+ * @brief Free device descriptor
+ *
  * @param dev Device descriptor
  * @return `ESP_OK` on success
  */
 esp_err_t tsl2561_free_desc(tsl2561_t *dev);
 
 /**
- * Initialize device
+ * @brief Initialize device
+ *
  * @param dev Device descriptor
  * @return `ESP_OK` on success
  */
 esp_err_t tsl2561_init(tsl2561_t *dev);
 
 /**
- * Set device integration time
+ * @brief Set device integration time
+ *
  * @param dev Device descriptor
  * @param integration_time Integration time
  * @return `ESP_OK` on success
@@ -97,7 +129,8 @@ esp_err_t tsl2561_init(tsl2561_t *dev);
 esp_err_t tsl2561_set_integration_time(tsl2561_t *dev, tsl2561_integration_time_t integration_time);
 
 /**
- * Set device gain
+ * @brief Set device gain
+ *
  * @param dev Device descriptor
  * @param gain Gain
  * @return `ESP_OK` on success
@@ -105,9 +138,10 @@ esp_err_t tsl2561_set_integration_time(tsl2561_t *dev, tsl2561_integration_time_
 esp_err_t tsl2561_set_gain(tsl2561_t *dev, tsl2561_gain_t gain);
 
 /**
- * Read light intensity from device
+ * @brief Read light intensity from device
+ *
  * @param dev Device descriptor
- * @param lux Light intensity, lux
+ * @param[out] lux Light intensity, lux
  * @return `ESP_OK` on success
  */
 esp_err_t tsl2561_read_lux(tsl2561_t *dev, uint32_t *lux);

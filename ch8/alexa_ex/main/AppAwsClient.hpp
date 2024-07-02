@@ -42,7 +42,7 @@ namespace app
 
         NetworkContext_t m_network_context;
         TransportInterface_t m_transport;
-        
+
         MQTTConnectInfo_t m_connect_info;
         MQTTFixedBuffer_t m_network_buffer;
         MQTTPublishInfo_t m_publish_info;
@@ -112,11 +112,13 @@ namespace app
             {
                 if (xTlsConnect(&m_network_context) == TLS_TRANSPORT_SUCCESS)
                 {
-                    vTaskResume(m_process_task);
-
                     bool sess_present;
                     m_aws_connected = MQTT_Connect(&m_mqtt_context, &m_connect_info, nullptr, 1000, &sess_present) == MQTTSuccess;
-                    if (!m_aws_connected)
+                    if (m_aws_connected)
+                    {
+                        vTaskResume(m_process_task);
+                    }
+                    else
                     {
                         vTaskSuspend(m_process_task);
                     }

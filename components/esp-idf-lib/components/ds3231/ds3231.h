@@ -1,3 +1,28 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2015 Richard A Burton <richardaburton@gmail.com>
+ * Copyright (c) 2016 Bhuvanchandra DV <bhuvanchandra.dv@gmail.com>
+ * Copyright (c) 2018 Ruslan V. Uss <unclerus@gmail.com>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 /**
  * @file ds3231.h
  * @defgroup ds3231 ds3231
@@ -7,9 +32,9 @@
  *
  * Ported from esp-open-rtos
  *
- * Copyright (C) 2015 Richard A Burton <richardaburton@gmail.com>\n
- * Copyright (C) 2016 Bhuvanchandra DV <bhuvanchandra.dv@gmail.com>\n
- * Copyright (C) 2018 Ruslan V. Uss <unclerus@gmail.com>
+ * Copyright (c) 2015 Richard A Burton <richardaburton@gmail.com>\n
+ * Copyright (c) 2016 Bhuvanchandra DV <bhuvanchandra.dv@gmail.com>\n
+ * Copyright (c) 2018 Ruslan V. Uss <unclerus@gmail.com>
  *
  * MIT Licensed as described in the file LICENSE
  */
@@ -72,6 +97,7 @@ typedef enum {
 
 /**
  * @brief Initialize device descriptor
+ *
  * @param dev I2C device descriptor
  * @param port I2C port
  * @param sda_gpio SDA GPIO
@@ -82,6 +108,7 @@ esp_err_t ds3231_init_desc(i2c_dev_t *dev, i2c_port_t port, gpio_num_t sda_gpio,
 
 /**
  * @brief Free device descriptor
+ *
  * @param dev I2C device descriptor
  * @return ESP_OK to indicate success
  */
@@ -99,6 +126,7 @@ esp_err_t ds3231_set_time(i2c_dev_t *dev, struct tm *time);
 
 /**
  * @brief Get the time from the RTC, populates a supplied tm struct
+ *
  * @param dev Device descriptor
  * @param[out] time RTC time
  * @return ESP_OK to indicate success
@@ -116,7 +144,7 @@ esp_err_t ds3231_get_time(i2c_dev_t *dev, struct tm *time);
  * and you can set both alarms at the same time (pass `DS3231_ALARM_1`/`DS3231_ALARM_2`/`DS3231_ALARM_BOTH`).
  *
  * If only setting one alarm just pass 0 for `tm` struct and `option` field for the other alarm.
- * If using `DS3231_ALARM1_EVERY_SECOND`/`DS3231_ALARM2_EVERY_MIN` you can pass 0 for `tm` stuct.
+ * If using ::DS3231_ALARM1_EVERY_SECOND/::DS3231_ALARM2_EVERY_MIN you can pass 0 for `tm` struct.
  *
  * If you want to enable interrupts for the alarms you need to do that separately.
  *
@@ -139,6 +167,7 @@ esp_err_t ds3231_get_oscillator_stop_flag(i2c_dev_t *dev, bool *flag);
 
 /**
  * @brief Clear the oscillator stopped flag
+ *
  * @param dev Device descriptor
  * @return ESP_OK to indicate success
  */
@@ -245,6 +274,17 @@ esp_err_t ds3231_disable_squarewave(i2c_dev_t *dev);
 esp_err_t ds3231_set_squarewave_freq(i2c_dev_t *dev, ds3231_sqwave_freq_t freq);
 
 /**
+ * @brief Get the frequency of the squarewave output
+ *
+ * Does not enable squarewave output.
+ *
+ * @param dev Device descriptor
+ * @param freq Squarewave frequency to store the output
+ * @return ESP_OK to indicate success
+ */
+esp_err_t ds3231_get_squarewave_freq(i2c_dev_t *dev, ds3231_sqwave_freq_t* freq);
+
+/**
  * @brief Get the raw temperature value
  *
  * **Supported only by DS3231**
@@ -276,6 +316,36 @@ esp_err_t ds3231_get_temp_integer(i2c_dev_t *dev, int8_t *temp);
  * @return ESP_OK to indicate success
  */
 esp_err_t ds3231_get_temp_float(i2c_dev_t *dev, float *temp);
+
+
+/**
+ * @brief Set the aging offset register to a new value.
+ *
+ * Positive aging values add capacitance to the array,
+ * slowing the oscillator frequency. Negative values remove
+ * capacitance from the array, increasing the oscillator
+ * frequency.
+ *
+ * **Supported only by DS3231**
+ *
+ * @param dev Device descriptor
+ * @param age Aging offset (in range [-128, 127]) to be set
+ * @return ESP_OK to indicate success
+ */
+esp_err_t ds3231_set_aging_offset(i2c_dev_t *dev, int8_t age);
+
+
+/**
+ * @brief Get the aging offset register.
+ *
+ * **Supported only by DS3231**
+ *
+ * @param dev Device descriptor
+ * @param[out] age Aging offset in range [-128, 127]
+ * @return ESP_OK to indicate success
+ */
+esp_err_t ds3231_get_aging_offset(i2c_dev_t *dev, int8_t *age);
+
 
 #ifdef	__cplusplus
 }

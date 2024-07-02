@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "OtaInitEvent_FreeRTOS",
+  "proof-root": "test/cbmc/proofs"
+}

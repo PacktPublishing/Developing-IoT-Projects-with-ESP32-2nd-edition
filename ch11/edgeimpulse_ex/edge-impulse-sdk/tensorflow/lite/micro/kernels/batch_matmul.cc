@@ -83,7 +83,7 @@ struct OpData {
 
 struct OpContext {
   OpContext(TfLiteContext* context, TfLiteNode* node) {
-    params = static_cast<TfLiteBatchMatMulParams*>(node->builtin_data);
+    params = reinterpret_cast<TfLiteBatchMatMulParams*>(node->builtin_data);
     opdata = static_cast<OpData*>(node->user_data);
   }
 
@@ -94,13 +94,13 @@ struct OpContext {
 struct PrepareOpContext : OpContext {
   PrepareOpContext(TfLiteContext* context, TfLiteNode* node)
       : OpContext(context, node) {
-    lhs = GetInput(context, node, kInputLHSTensor);
-    rhs = GetInput(context, node, kInputRHSTensor);
-    output = GetOutput(context, node, kOutputTensor);
+    MicroContext* micro_context = GetMicroContext(context);
+    lhs = micro_context->AllocateTempInputTensor(node, kInputLHSTensor);
+    rhs = micro_context->AllocateTempInputTensor(node, kInputRHSTensor);
+    output = micro_context->AllocateTempOutputTensor(node, kOutputTensor);
   }
-
-  const TfLiteTensor* lhs;
-  const TfLiteTensor* rhs;
+  TfLiteTensor* lhs;
+  TfLiteTensor* rhs;
   TfLiteTensor* output;
 };
 
@@ -341,6 +341,8 @@ TfLiteStatus CalculateOpData(TfLiteContext* context, TfLiteNode* node) {
   TF_LITE_ENSURE_EQ(context, NumInputs(node), 2);
   TF_LITE_ENSURE_EQ(context, NumOutputs(node), 1);
 
+  MicroContext* micro_context = GetMicroContext(context);
+
   PrepareOpContext op_context(context, node);
   const TfLiteTensor* lhs_data = op_context.lhs;
   TF_LITE_ENSURE(context, lhs_data != nullptr);
@@ -427,6 +429,11 @@ TfLiteStatus CalculateOpData(TfLiteContext* context, TfLiteNode* node) {
   TfLiteStatus status =
       ResizeOutputTensor(context, node, extended_lhs_shape, extended_rhs_shape,
                          adj_x, adj_y, output_rank, output);
+
+  micro_context->DeallocateTempTfLiteTensor(op_context.lhs);
+  micro_context->DeallocateTempTfLiteTensor(op_context.rhs);
+  micro_context->DeallocateTempTfLiteTensor(op_context.output);
+
   return status;
 }
 

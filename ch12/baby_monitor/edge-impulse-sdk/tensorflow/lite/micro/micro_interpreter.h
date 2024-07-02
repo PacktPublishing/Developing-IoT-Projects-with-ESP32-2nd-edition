@@ -80,9 +80,10 @@ class MicroInterpreter {
   // one external context.
   TfLiteStatus SetMicroExternalContext(void* external_context_payload);
 
-  size_t tensors_size() const { return model_->subgraphs()->Get(0)->tensors()->size(); }
+  size_t tensors_size(size_t subgraph_idx = 0) const { return model_->subgraphs()->Get(subgraph_idx)->tensors()->size(); }
 
-  TfLiteTensor* tensor(size_t tensor_index);
+  TfLiteTensor* tensor(size_t tensor_index, size_t subgraph_idx = 0);
+
   template <class T>
   T* typed_tensor(int tensor_index) {
     if (TfLiteTensor* tensor_ptr = tensor(tensor_index)) {
@@ -135,13 +136,17 @@ class MicroInterpreter {
 
   TfLiteStatus initialization_status() const { return initialization_status_; }
 
-  size_t operators_size() const { return model_->subgraphs()->Get(0)->operators()->size(); }
-
 #ifdef EON_COMPILER_RUN
   NodeAndRegistration* node_and_registrations_ = nullptr;
 
-  const NodeAndRegistration node_and_registration(int node_index) const {
-    return node_and_registrations_[node_index];
+  size_t operators_size(uint32_t subgraph_idx = 0) const
+  {
+    return model_->subgraphs()->Get(subgraph_idx)->operators()->size();
+  }
+
+  const NodeAndRegistration node_and_registration(int node_index, int sg)
+  {
+    return graph_.GetAllocations()[sg].node_and_registrations[node_index];
   }
 #endif
 

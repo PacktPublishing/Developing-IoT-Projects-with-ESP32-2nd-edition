@@ -45,7 +45,7 @@ namespace app
     public:
         void start(void)
         {
-            esp_board_init(AUDIO_HAL_16K_SAMPLES, 1, 16);
+            esp_board_init(16000, 1, 16);
             m_led.init();
 
             m_models = esp_srmodel_init("model");
@@ -162,26 +162,36 @@ namespace app
 
     afe_config_t AppSpeech::defaultAfeConfig()
     {
-        return {
-            .aec_init = false,
-            .se_init = true,
-            .vad_init = true,
-            .wakenet_init = true,
-            .voice_communication_init = false,
-            .voice_communication_agc_init = false,
-            .voice_communication_agc_gain = 15,
-            .vad_mode = VAD_MODE_3,
-            .wakenet_model_name = nullptr,
-            .wakenet_mode = DET_MODE_2CH_90,
-            .afe_mode = SR_MODE_LOW_COST,
-            .afe_perferred_core = 0,
-            .afe_perferred_priority = 5,
-            .afe_ringbuf_size = 50,
-            .memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM,
-            .agc_mode = AFE_MN_PEAK_AGC_MODE_2,
-            .pcm_config = {3, 2, 1, 16000},
-            .debug_init = false,
-            .debug_hook = {{AFE_DEBUG_HOOK_MASE_TASK_IN, nullptr}, {AFE_DEBUG_HOOK_FETCH_TASK_IN, nullptr}},
-        };
+        afe_config_t afe_config = {.debug_hook = {{AFE_DEBUG_HOOK_MASE_TASK_IN, nullptr}, {AFE_DEBUG_HOOK_FETCH_TASK_IN, nullptr}}};
+
+        afe_config.aec_init = true;
+        afe_config.se_init = true;
+        afe_config.vad_init = true;
+        afe_config.wakenet_init = true;
+        afe_config.voice_communication_init = false;
+        afe_config.voice_communication_agc_init = false;
+        afe_config.voice_communication_agc_gain = 15;
+        afe_config.vad_mode = VAD_MODE_3;
+        afe_config.wakenet_model_name = nullptr;
+        afe_config.wakenet_model_name_2 = nullptr;
+        afe_config.wakenet_mode = DET_MODE_2CH_90;
+        afe_config.afe_mode = SR_MODE_LOW_COST;
+        afe_config.afe_perferred_core = 0;
+        afe_config.afe_perferred_priority = 5;
+        afe_config.afe_ringbuf_size = 50;
+        afe_config.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
+        afe_config.afe_linear_gain = 1.0;
+        afe_config.agc_mode = AFE_MN_PEAK_AGC_MODE_2;
+        afe_config.debug_init = false;
+        afe_config.afe_ns_mode = NS_MODE_SSP;
+        afe_config.afe_ns_model_name = nullptr;
+
+        afe_config.pcm_config.total_ch_num = 3;
+        afe_config.pcm_config.mic_num = 2;
+        afe_config.pcm_config.ref_num = 1;
+        afe_config.pcm_config.sample_rate = 16000;
+
+        afe_config.aec_init = false;
+        return afe_config;
     }
 } // namespace app

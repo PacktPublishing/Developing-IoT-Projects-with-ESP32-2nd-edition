@@ -335,37 +335,40 @@ public:
     }
 
     static void transpose_in_place(matrix_t *matrix) {
-        size_t size = matrix->cols * matrix->rows - 1;
-        float temp; // temp for swap
-        size_t next; // next item to swap
-        size_t cycleBegin; // index of start of cycle
-        size_t i; // location in matrix
-        size_t all_done_mark = 1;
-        ei_vector<bool> done(size+1,false);
+        // Don't bother if either dim is one, just need to swap the dimension sizes
+        if( matrix->rows != 1 && matrix->cols != 1) {
+            size_t size = matrix->cols * matrix->rows - 1;
+            float temp; // temp for swap
+            size_t next; // next item to swap
+            size_t cycleBegin; // index of start of cycle
+            size_t i; // location in matrix
+            size_t all_done_mark = 1;
+            ei_vector<bool> done(size+1,false);
 
-        i = 1; // Note that matrix[0] and last element of matrix won't move
-        while (1)
-        {
-            cycleBegin = i;
-            temp = matrix->buffer[i];
-            do
+            i = 1; // Note that matrix[0] and last element of matrix won't move
+            while (1)
             {
-                size_t col = i % matrix->cols;
-                size_t row = i / matrix->cols;
-                // swap row and col to make new idx, b/c we want to know where in the transposed matrix
-                next = col*matrix->rows + row;
-                float temp2 = matrix->buffer[next];
-                matrix->buffer[next] = temp;
-                temp = temp2;
-                done[next] = true;
-                i = next;
-            }
-            while (i != cycleBegin);
+                cycleBegin = i;
+                temp = matrix->buffer[i];
+                do
+                {
+                    size_t col = i % matrix->cols;
+                    size_t row = i / matrix->cols;
+                    // swap row and col to make new idx, b/c we want to know where in the transposed matrix
+                    next = col*matrix->rows + row;
+                    float temp2 = matrix->buffer[next];
+                    matrix->buffer[next] = temp;
+                    temp = temp2;
+                    done[next] = true;
+                    i = next;
+                }
+                while (i != cycleBegin);
 
-            // start next cycle by find next not done
-            for (i = all_done_mark; done[i]; i++) {
-                all_done_mark++; // move the high water mark so we don't look again
-                if(i>=size) { goto LOOP_END; }
+                // start next cycle by find next not done
+                for (i = all_done_mark; done[i]; i++) {
+                    all_done_mark++; // move the high water mark so we don't look again
+                    if(i>=size) { goto LOOP_END; }
+                }
             }
         }
         LOOP_END:
@@ -1439,94 +1442,30 @@ public:
     }
 
     /**
-     * Convert an int32_t buffer into a float buffer, maps to -1..1
-     * @param input
-     * @param output
-     * @param length
-     * @returns 0 if OK
-     */
-    static int int32_to_float(const EIDSP_i32 *input, float *output, size_t length) {
-#if EIDSP_USE_CMSIS_DSP
-        arm_q31_to_float((q31_t *)input, output, length);
-#else
-        for (size_t ix = 0; ix < length; ix++) {
-            output[ix] = (float)(input[ix]) / 2147483648.f;
-        }
-#endif
-        return EIDSP_OK;
-    }
-
-    /**
-     * Convert an float buffer into a fixedpoint 32 bit buffer, input values are
-     * limited between -1 and 1
-     * @param input
-     * @param output
-     * @param length
-     * @returns 0 if OK
-     */
-    static int float_to_int32(const float *input, EIDSP_i32 *output, size_t length) {
-#if EIDSP_USE_CMSIS_DSP
-        arm_float_to_q31((float *)input, (q31_t *)output, length);
-#else
-        for (size_t ix = 0; ix < length; ix++) {
-            output[ix] = (EIDSP_i32)saturate((int64_t)(input[ix] * 2147483648.f), 32);
-        }
-#endif
-        return EIDSP_OK;
-    }
-
-    /**
-     * Convert an int16_t buffer into a float buffer, maps to -1..1
+     * Convert an int16_t buffer into a float buffer
      * @param input
      * @param output
      * @param length
      * @returns 0 if OK
      */
     static int int16_to_float(const EIDSP_i16 *input, float *output, size_t length) {
-#if EIDSP_USE_CMSIS_DSP
-        arm_q15_to_float((q15_t *)input, output, length);
-#else
         for (size_t ix = 0; ix < length; ix++) {
-            output[ix] = (float)(input[ix]) / 32768.f;
+            output[ix] = static_cast<float>((input[ix]));
         }
-#endif
         return EIDSP_OK;
     }
 
     /**
-     * Convert an float buffer into a fixedpoint 16 bit buffer, input values are
-     * limited between -1 and 1
-     * @param input
-     * @param output
-     * @param length
-     * @returns 0 if OK
-     */
-    static int float_to_int16(const float *input, EIDSP_i16 *output, size_t length) {
-#if EIDSP_USE_CMSIS_DSP
-        arm_float_to_q15((float *)input, output, length);
-#else
-        for (size_t ix = 0; ix < length; ix++) {
-            output[ix] = (EIDSP_i16)saturate((int32_t)(input[ix] * 32768.f), 16);
-        }
-#endif
-        return EIDSP_OK;
-    }
-
-    /**
-     * Convert an int8_t buffer into a float buffer, maps to -1..1
+     * Convert an int8_t buffer into a float buffer
      * @param input
      * @param output
      * @param length
      * @returns 0 if OK
      */
     static int int8_to_float(const EIDSP_i8 *input, float *output, size_t length) {
-#if EIDSP_USE_CMSIS_DSP
-        arm_q7_to_float((q7_t *)input, output, length);
-#else
         for (size_t ix = 0; ix < length; ix++) {
-            output[ix] = (float)(input[ix]) / 128;
+            output[ix] = static_cast<float>((input[ix]));
         }
-#endif
         return EIDSP_OK;
     }
 
@@ -2085,89 +2024,6 @@ public:
       return count;
     }
 
-    static void sqrt_q15(int16_t in, int16_t *pOut)
-    {
-        int32_t bits_val1;
-        int16_t number, temp1, var1, signBits1, half;
-        float temp_float1;
-        union {
-            int32_t fracval;
-            float floatval;
-        } tempconv;
-
-        number = in;
-
-        /* If the input is a positive number then compute the signBits. */
-        if (number > 0) {
-            signBits1 = count_leading_zeros(number) - 17;
-
-            /* Shift by the number of signBits1 */
-            if ((signBits1 % 2) == 0) {
-                number = number << signBits1;
-            } else {
-                number = number << (signBits1 - 1);
-            }
-
-            /* Calculate half value of the number */
-            half = number >> 1;
-            /* Store the number for later use */
-            temp1 = number;
-
-            /* Convert to float */
-            temp_float1 = number * 3.051757812500000e-005f;
-            /* Store as integer */
-            tempconv.floatval = temp_float1;
-            bits_val1 = tempconv.fracval;
-            /* Subtract the shifted value from the magic number to give intial guess */
-            bits_val1 = 0x5f3759df - (bits_val1 >> 1); /* gives initial guess */
-            /* Store as float */
-            tempconv.fracval = bits_val1;
-            temp_float1 = tempconv.floatval;
-            /* Convert to integer format */
-            var1 = (int32_t)(temp_float1 * 16384);
-
-            /* 1st iteration */
-            var1 =
-                ((int16_t)(
-                    (int32_t)var1 *
-                        (0x3000 -
-                         ((int16_t)((((int16_t)(((int32_t)var1 * var1) >> 15)) * (int32_t)half) >> 15))) >>
-                    15))
-                << 2;
-            /* 2nd iteration */
-            var1 =
-                ((int16_t)(
-                    (int32_t)var1 *
-                        (0x3000 -
-                         ((int16_t)((((int16_t)(((int32_t)var1 * var1) >> 15)) * (int32_t)half) >> 15))) >>
-                    15))
-                << 2;
-            /* 3rd iteration */
-            var1 =
-                ((int16_t)(
-                    (int32_t)var1 *
-                        (0x3000 -
-                         ((int16_t)((((int16_t)(((int32_t)var1 * var1) >> 15)) * (int32_t)half) >> 15))) >>
-                    15))
-                << 2;
-
-            /* Multiply the inverse square root with the original value */
-            var1 = ((int16_t)(((int32_t)temp1 * var1) >> 15)) << 1;
-
-            /* Shift the output down accordingly */
-            if ((signBits1 % 2) == 0) {
-                var1 = var1 >> (signBits1 / 2);
-            } else {
-                var1 = var1 >> ((signBits1 - 1) / 2);
-            }
-            *pOut = var1;
-        }
-        /* If the number is a negative number then store zero as its square root value */
-        else {
-            *pOut = 0;
-        }
-    }
-
 #if EIDSP_USE_CMSIS_DSP
     /**
      * Initialize a CMSIS-DSP fast rfft structure
@@ -2447,6 +2303,22 @@ public:
         zero_handling(input->buffer, input->rows * input->cols);
     }
 
+    /**
+     * This function handle the underflow float values.
+     * @param input Array
+     * @param input_size Size of array
+     * @param epsilon Smallest valid non-zero value
+     * @returns void
+     */
+    static void underflow_handling(float* input, size_t input_size, float epsilon = 1e-07f)
+    {
+        for (size_t ix = 0; ix < input_size; ix++) {
+            if (fabs(input[ix]) < epsilon) {
+                input[ix] = 0.0f;
+            }
+        }
+    }
+
     __attribute__((unused)) static void scale(fvec& v, float scale) {
         for (auto& x : v) {
             x *= scale;
@@ -2598,10 +2470,10 @@ public:
         return c;
     }
 
-    __attribute__((unused)) static fvec arrange(float start, float end, float step) {
+    __attribute__((unused)) static fvec arange(float start, float end, float step) {
         assert(start < end);
         assert(step > 0);
-        fvec v((size_t)((end - start) / step));
+        fvec v(::round((end - start) / step));
         for (size_t i = 0; i < v.size(); i++) {
             v[i] = start + i * step;
         }

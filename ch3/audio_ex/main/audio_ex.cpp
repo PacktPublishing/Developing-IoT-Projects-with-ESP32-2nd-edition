@@ -12,16 +12,16 @@ namespace
     app::AppButton m_app_btn;
 
     esp_err_t audio_mute_function(AUDIO_PLAYER_MUTE_SETTING setting);
-    void play_music(void *data);
-    void volume_up(void *data);
-    void volume_down(void *data);
+    void play_music(void *handle, void *data);
+    void volume_up(void *handle, void *data);
+    void volume_down(void *handle, void *data);
 }
 
 extern "C" void app_main(void)
 {
+    bsp_i2c_init();
+    bsp_spiffs_mount();
     bsp_board_init();
-    bsp_board_power_ctrl(POWER_MODULE_AUDIO, true);
-    bsp_spiffs_init("storage", "/spiffs", 2);
 
     m_app_settings.init();
     m_app_audio.init(audio_mute_function);
@@ -30,17 +30,18 @@ extern "C" void app_main(void)
 
 namespace
 {
-    void play_music(void *data)
+    
+    void play_music(void *handle, void *data)
     {
         m_app_audio.play();
     }
 
-    void volume_up(void *data)
+    void volume_up(void *handle, void *data)
     {
         m_app_audio.volume_up();
     }
 
-    void volume_down(void *data)
+    void volume_down(void *handle, void *data)
     {
         m_app_audio.volume_down();
     }

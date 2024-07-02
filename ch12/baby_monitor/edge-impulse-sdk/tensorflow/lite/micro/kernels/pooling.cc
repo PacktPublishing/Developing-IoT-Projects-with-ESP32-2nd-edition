@@ -1360,7 +1360,7 @@ TfLiteStatus AverageEval(TfLiteContext* context, TfLiteNode* node) {
 #if ESP_NN
       AverageEvalQuantized(context, node, params, data, input, output);
 #else
-      AveragePoolingEvalQuantized(context, node, params, data, input, output);
+      AveragePoolingEvalQuantized<int8_t>(context, node, params, data, input, output);
 #endif
       break;
     default:
@@ -1404,7 +1404,7 @@ TfLiteStatus MaxEval(TfLiteContext* context, TfLiteNode* node) {
 #if ESP_NN
       MaxEvalQuantized(context, node, params, data, input, output);
 #else
-      MaxPoolingEvalQuantized(context, node, params, data, input, output);
+      MaxPoolingEvalQuantized<int8_t>(context, node, params, data, input, output);
 #endif
       break;
     default:

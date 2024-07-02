@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "Posix_OtaStopTimer",
+  "proof-root": "test/cbmc/proofs"
+}

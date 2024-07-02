@@ -1,0 +1,318 @@
+/**
+@mainpage Overview
+@anchor mqtt_agent
+@brief Thread safe MQTT 3.1.1 client
+
+The coreMQTT Agent is a thread-safe library to serialize calls to coreMQTT, to be executed by a single thread. It provides APIs for a single, dedicated agent task to process coreMQTT related commands, and the APIs for other tasks to enqueue these commands for processing.
+
+@section coreMQTT_brief Why is there a higher level library based on coreMQTT?
+[coreMQTT](@ref mqtt) is an MIT licensed open source C MQTT client library for microcontroller and small microprocessor based IoT devices. Its design is intentionally simple to ensure it has no dependency on any other library or operating system, and to better enable static analysis including memory safety proofs. That simplicity and lack of operating system dependency (coreMQTT does not require multithreading at all) means coreMQTT does not build thread safety directly into its implementation. Instead, thread safety must be provided by higher level software. The coreMQTT Agent library is a coreMQTT extension that provides that higher level functionality in the form of an MQTT agent (or MQTT daemon).
+
+@section core_mqtt_agent_memory_requirements Memory Requirements
+@brief Memory requirements of the MQTT Agent library, including the coreMQTT library.
+
+@include{doc} size_table.md
+*/
+
+/**
+@page mqtt_agent_design Design
+@brief Architecture of the MQTT Agent library.
+
+@section mqtt_agent_task_thread_safety Thread Safe and Unsafe APIs
+
+The MQTT Agent APIs are designed to be used by two types of tasks:
+- An MQTT agent task that manages an MQTT connection and calls coreMQTT APIs. The APIs used by this task are not thread safe, and each agent task should use a unique @ref MQTTAgentContext_t (multiple agent tasks may be used to handle multiple simultaneous MQTT connections, but each must have a unique context). This task is expected to invoke @ref MQTTAgent_CommandLoop to process commands from other tasks to call coreMQTT APIs. The APIs for this task are:
+  - @ref MQTTAgent_Init
+  - @ref MQTTAgent_CommandLoop
+  - @ref MQTTAgent_ResumeSession
+  - @ref MQTTAgent_CancelAll
+- Application tasks that want to perform MQTT operations with thread safety. These tasks are any task that is <i>not</i> an MQTT agent task. The APIs used by application tasks are thread safe, and send commands that are processed by an MQTT agent task in @ref MQTTAgent_CommandLoop. These APIs can accept several structures used by either the command or completion callback, and these structures MUST remain in scope until the associated command has been completed, including @ref MQTTPublishInfo_t, @ref MQTTAgentSubscribeArgs_t, @ref MQTTAgentConnectArgs_t, and @ref MQTTAgentCommandContext_t. The APIs are asynchronous, so will return as soon as the command has been sent; they will <i>not</i> wait for the command to be processed. These APIs are:
+  - @ref MQTTAgent_Publish
+  - @ref MQTTAgent_Subscribe
+  - @ref MQTTAgent_Unsubscribe
+  - @ref MQTTAgent_Ping
+  - @ref MQTTAgent_Connect
+  - @ref MQTTAgent_Disconnect
+  - @ref MQTTAgent_Terminate
+
+@section mqtt_agent_interfaces Interfaces and Callbacks
+Similar to coreMQTT, the MQTT Agent library relies on interfaces to dissociate itself from platform specific functionality. Interfaces used by the MQTT Agent library are simply function pointers with expectations of behavior.
+
+The MQTT Agent library expects the application to provide implementations for the following interfaces:
+
+<table>
+    <tr>
+        <td><b>Function Pointer</b></td>
+        <td><b>Use</b></td>
+    </tr>
+    <tr>
+        <td>@ref MQTTAgentMessageRecv_t</td>
+        <td>Receiving commands sent to the agent task.</td>
+    </tr>
+    <tr>
+        <td>@ref MQTTAgentMessageSend_t</td>
+        <td>Sending commands to the agent task from the application</td>
+    </tr>
+    <tr>
+        <td>@ref MQTTAgentCommandGet_t</td>
+        <td>Allocating storage for a command to be sent to the agent task.</td>
+    </tr>
+    <tr>
+        <td>@ref MQTTAgentCommandRelease_t</td>
+        <td>Releasing a command obtained from @ref MQTTAgentCommandGet_t.</td>
+    </tr>
+    <tr>
+        <td>@ref MQTTAgentIncomingPublishCallback_t</td>
+        <td>Accepting incoming publish messages, with the possibility of further distributing them to other tasks.</td>
+    </tr>
+</table>
+
+@section mqtt_agent_command_completion Command Completion
+Commands do not have any timeout associated with them. The only way for a task to be aware of a command's completion is through the invocation of an optional @ref MQTTAgentCommandCallback_t completion callback.
+The completion callback will be invoked with an optional @ref MQTTAgentCommandContext_t, which is the incomplete type <b>struct MQTTAgentCommandContext</b>. This type must be defined by the application, and should contain information that would be useful in distinguishing commands.<br>
+<b>Example code:</b>
+@code{c}
+struct MQTTAgentCommandContext
+{
+    //Allow the calling thread to view the return code by copying it here.
+    MQTTStatus_t returnCode;
+    //pthread mutex and condition variables to signal to the thread that created the command.
+    pthread_mutex_t lock;
+    pthread_cond_t cond;
+};
+@endcode
+<br>
+The completion callback using such a context could be:
+@code{c}
+void commandCompleteCallback( MQTTAgentCommandContext_t * pCmdContext, MQTTAgentReturnInfo_t * pReturnInfo )
+{
+    pthread_mutex_lock( &( pCmdContext->lock ) );
+    //Set return code so the thread that created the command can view.
+    pCmdContext->returnCode = pReturnInfo->returnCode;
+    pthread_mutex_unlock( &( pCmdContext->lock ) );
+    //Signal the thread using the condition variable.
+    pthread_cond_broadcast( &( pCmdContext->cond ) );
+}
+@endcode
+<br>
+The completion callback and completion context are each optional, and passed at time of command creation in the @ref MQTTAgentCommandInfo_t parameter. If a command completion context is passed, it MUST remain in scope until the completion callback has been invoked.
+*/
+
+/**
+@page core_mqtt_agent_config Configurations
+@brief Configurations of the MQTT Agent.
+<!-- @par configpagestyle allows the @section titles to be styled according to style.css -->
+@par configpagestyle
+
+Configuration settings are C preprocessor constants. They can be set with a `#define` in the config file (**core_mqtt_config.h**) or by using a compiler option such as -D in gcc. The MQTT Agent uses the same configuration file as [coreMQTT](@ref mqtt).
+
+@section MQTT_AGENT_MAX_OUTSTANDING_ACKS
+@copydoc MQTT_AGENT_MAX_OUTSTANDING_ACKS
+
+@section MQTT_AGENT_MAX_EVENT_QUEUE_WAIT_TIME
+@copydoc MQTT_AGENT_MAX_EVENT_QUEUE_WAIT_TIME
+
+@section MQTT_AGENT_FUNCTION_TABLE
+@copydoc MQTT_AGENT_FUNCTION_TABLE
+
+*/
+
+/**
+@page mqtt_agent_functions Functions
+@brief Functions of the MQTT Agent library<br><br>
+@section mqtt_agent_thread_unsafe_functions Thread Unsafe Functions
+
+These functions are not thread safe and are designed to be used only by an MQTT agent task -
+a task dedicated to interfacing with the [coreMQTT](@ref mqtt) API.<br><br>
+@subpage mqtt_agent_init_function <br>
+@subpage mqtt_agent_command_function <br>
+@subpage mqtt_agent_resume_function <br>
+@subpage mqtt_agent_cancel_function <br><br>
+
+@section mqtt_agent_thread_safe_functions Thread Safe Functions
+
+These functions are thread safe and designed to be used by any application task (one that is *not* the MQTT agent task).<br><br>
+@subpage mqtt_agent_publish_function <br>
+@subpage mqtt_agent_subscribe_function <br>
+@subpage mqtt_agent_unsubscribe_function <br>
+@subpage mqtt_agent_connect_function <br>
+@subpage mqtt_agent_disconnect_function <br>
+@subpage mqtt_agent_ping_function <br>
+@subpage mqtt_agent_terminate_function <br><br>
+
+@page mqtt_agent_init_function MQTTAgent_Init
+@snippet core_mqtt_agent.h declare_mqtt_agent_init
+@copydoc MQTTAgent_Init
+
+@page mqtt_agent_command_function MQTTAgent_CommandLoop
+@snippet core_mqtt_agent.h declare_mqtt_agent_commandloop
+@copydoc MQTTAgent_CommandLoop
+
+@page mqtt_agent_resume_function MQTTAgent_ResumeSession
+@snippet core_mqtt_agent.h declare_mqtt_agent_resumesession
+@copydoc MQTTAgent_ResumeSession
+
+@page mqtt_agent_cancel_function MQTTAgent_CancelAll
+@snippet core_mqtt_agent.h declare_mqtt_agent_cancelall
+@copydoc MQTTAgent_CancelAll
+
+@page mqtt_agent_publish_function MQTTAgent_Publish
+@snippet core_mqtt_agent.h declare_mqtt_agent_publish
+@copydoc MQTTAgent_Publish
+
+@page mqtt_agent_subscribe_function MQTTAgent_Subscribe
+@snippet core_mqtt_agent.h declare_mqtt_agent_subscribe
+@copydoc MQTTAgent_Subscribe
+
+@page mqtt_agent_unsubscribe_function MQTTAgent_Unsubscribe
+@snippet core_mqtt_agent.h declare_mqtt_agent_unsubscribe
+@copydoc MQTTAgent_Unsubscribe
+
+@page mqtt_agent_connect_function MQTTAgent_Connect
+@snippet core_mqtt_agent.h declare_mqtt_agent_connect
+@copydoc MQTTAgent_Connect
+
+@page mqtt_agent_disconnect_function MQTTAgent_Disconnect
+@snippet core_mqtt_agent.h declare_mqtt_agent_disconnect
+@copydoc MQTTAgent_Disconnect
+
+@page mqtt_agent_ping_function MQTTAgent_Ping
+@snippet core_mqtt_agent.h declare_mqtt_agent_ping
+@copydoc MQTTAgent_Ping
+
+@page mqtt_agent_terminate_function MQTTAgent_Terminate
+@snippet core_mqtt_agent.h declare_mqtt_agent_terminate
+@copydoc MQTTAgent_Terminate
+
+*/
+
+/**
+@page mqtt_agent_message_interface Message Interface
+@brief Messaging interface used by the MQTT Agent.<br><br>
+@section mqtt_agent_message_interface_overview Message Interface Overview
+The message interface is a set of APIs to send MQTT Agent commands from application tasks to the MQTT agent task, as well as functions to allocate and release storage for these commands.
+It must be implemented with thread safety, as multiple tasks can send commands concurrently. The message interface is defined in @ref core_mqtt_agent_message_interface.h.<br>
+
+The functions that must be implemented are:<br>
+- [Message Send](@ref MQTTAgentMessageSend_t)
+- [Message Receive](@ref MQTTAgentMessageRecv_t)
+- [Get Command](@ref MQTTAgentCommandGet_t)
+- [Release Command](@ref MQTTAgentCommandRelease_t)
+
+The send and receive functions take in an opaque context @ref MQTTAgentMessageContext_t. The functions above and the context are grouped together in the @ref MQTTAgentMessageInterface_t structure:<br>
+@snippet core_mqtt_agent_message_interface.h define_messageinterface
+<br>
+
+@section mqtt_agent_message_interface_implement Implementing the Message Interface
+The following steps give guidance on implementing the messaging interface:<br>
+
+-# Implementing @ref MQTTAgentMessageContext_t<br><br>
+@snippet core_mqtt_agent_message_interface.h define_messagectx
+<br>
+@ref MQTTAgentMessageContext_t is the incomplete type <b>struct MQTTAgentMessageContext</b>. The implemented struct MQTTAgentMessageContext must contain all of the information needed to send and receive commands with @ref MQTTAgentMessageSend_t and @ref MQTTAgentMessageRecv_t with thread safety. For example, this may be a handle to a thread safe queue, or a queue along with synchronization primitives. Commands are sent by pointer, so this structure should be able to relay pointers of type [MQTTAgentCommand_t](@ref MQTTAgentCommand).<br><br>
+<b>Example code:</b>
+@code{c}
+struct MQTTAgentMessageContext
+{
+    //Queue holding MQTTAgentCommand_t * pointers.
+    Queue_t queue;
+};
+@endcode
+<br>
+-# Implementing @ref MQTTAgentMessageSend_t<br><br>
+@snippet core_mqtt_agent_message_interface.h define_messagesend
+<br>
+This function is expected to send the pointer that is pointed to by <b>pCommandToSend</b> using the message context.
+It will return `true` if the send was successful, else `false`.<br><br>
+<b>Example code:</b>
+@code{c}
+bool myMessageSendImplementation( MQTTAgentMessageContext_t * pMsgCtx,
+                                  MQTTAgentCommand_t * const * pCommandToSend,
+                                  uint32_t blockTimeMs )
+{
+    int status = EXIT_FAILURE;
+    if( ( pMsgCtx != NULL ) && ( pCommandToSend != NULL ) )
+    {
+        //A function to send data to via pointer to a queue.
+        status = Queue_SendToBack( pMsgCtx->queue, pCommandToSend, blockTimeMs );
+    }
+    return ( status == EXIT_SUCCESS );
+}
+@endcode
+<br>
+
+-# Implementing @ref MQTTAgentMessageRecv_t<br><br>
+@snippet core_mqtt_agent_message_interface.h define_messagerecv
+<br>
+This function is expected to receive a pointer that has been previously sent to the message context, and return in via the <b>pReceivedCommand</b> parameter.
+It will return `true` if the receive was successful, else `false`.<br><br>
+<b>Example code:</b>
+@code{c}
+bool myMessageRecvImplementation( MQTTAgentMessageContext_t * pMsgCtx,
+                                  MQTTAgentCommand_t ** pReceivedCommand,
+                                  uint32_t blockTimeMs )
+{
+    int status = EXIT_FAILURE;
+    void * pReceivedPointer;
+    if( ( pMsgCtx != NULL ) && ( pCommandToSend != NULL ) )
+    {
+        //A function to receive data from a queue.
+        status = Queue_Recv( pMsgCtx->queue, &pReceivedPointer, blockTimeMs );
+        if( status == EXIT_SUCCESS )
+        {
+            *pReceivedCommand = ( MQTTAgentCommand_t * ) pReceivedPointer;
+        }
+    }
+    return ( status == EXIT_SUCCESS );
+}
+@endcode
+<br>
+
+-# Implementing @ref MQTTAgentCommandGet_t<br><br>
+@snippet core_mqtt_agent_message_interface.h define_messageget
+<br>
+This function is expected to allocate storage for an [MQTTAgentCommand_t](@ref MQTTAgentCommand) struct. This function must be thread safe.
+It will return a pointer to the allocated command, or `NULL` if allocation failed.<br><br>
+<b>Example code:</b>
+@code{c}
+MQTTAgentCommand_t * myGetCommandImplementation( uint32_t blockTimeMs )
+{
+    MQTTAgentCommand_t * ret = ( MQTTAgentCommand_t * ) malloc( sizeof( MQTTAgentCommand_t ) );
+    return ret;
+}
+@endcode
+<br>
+
+-# Implementing @ref MQTTAgentCommandRelease_t<br><br>
+@snippet core_mqtt_agent_message_interface.h define_messagerelease
+<br>
+This function will release a [MQTTAgentCommand_t](@ref MQTTAgentCommand) struct that had been allocated with @ref MQTTAgentCommandGet_t.
+It will return a `true` if the command was release, else `false`.<br><br>
+<b>Example code:</b>
+@code{c}
+bool myReleaseCommandImplementation( MQTTAgentCommand_t * pCommandToRelease )
+{
+    free( pCommandToRelease );
+    //free() does not have a return value.
+    return true;
+}
+@endcode
+<br>
+*/
+
+/**
+@defgroup mqtt_agent_enum_types Enumerated Types
+@brief Enumerated types of the MQTT Agent
+*/
+
+/**
+@defgroup mqtt_agent_callback_types Callback Types
+@brief Callback function pointer types of the MQTT Agent
+*/
+
+/**
+@defgroup mqtt_agent_struct_types Parameter Structures
+@brief Structures passed as parameters to [MQTT Agent functions](@ref mqtt_agent_functions)
+
+These structures are passed as parameters to library functions. Documentation for these structures will state the functions associated with each parameter structure and the purpose of each member.
+*/

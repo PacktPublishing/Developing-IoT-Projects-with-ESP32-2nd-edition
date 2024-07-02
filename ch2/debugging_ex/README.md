@@ -1,32 +1,25 @@
-# _Sample project_
+# Hardware setup
 
-(See the README.md file in the upper level 'examples' directory for more information about examples.)
+The devkit of this example is ESP32-S3-BOX-3. To access the pins, use this extension board of the devkit: https://github.com/espressif/esp-box/blob/master/docs/_static/box_3_hardware_overview/pinlayout_box_3_bread.png
 
-This is the simplest buildable example. The example is used by command `idf.py create-project`
-that copies the project to user specified path and set it's name. For more information follow the [docs page](https://docs.espressif.com/projects/esp-idf/en/latest/api-guides/build-system.html#start-a-new-project)
+Pins to be used on the devkit extension: 5V0(IN), GND, USB-, USB+
 
+# Troubleshooting
 
+## Accessing USB via openocd on Linux
 
-## How to use example
-We encourage the users to use the example as a template for the new projects.
-A recommended way is to follow the instructions on a [docs page](https://docs.espressif.com/projects/esp-idf/en/latest/api-guides/build-system.html#start-a-new-project).
-
-## Example folder contents
-
-The project **sample_project** contains one source file in C language [main.c](main/main.c). The file is located in folder [main](main).
-
-ESP-IDF projects are built using CMake. The project build configuration is contained in `CMakeLists.txt`
-files that provide set of directives and instructions describing the project's source files and targets
-(executable, library, or both). 
-
-Below is short explanation of remaining files in the project folder.
-
+Do not forget to copy the udev rules:
 ```
-├── CMakeLists.txt
-├── main
-│   ├── CMakeLists.txt
-│   └── main.c
-└── README.md                  This is the file you are currently reading
+$ sudo cp -n ~/.espressif/tools/openocd-esp32/v0.12.0-esp32-20240318/openocd-esp32/share/openocd/contrib/60-openocd.rules /etc/udev/rules.d/
 ```
-Additionally, the sample project contains Makefile and component.mk files, used for the legacy Make based build system. 
-They are not used or needed when building with CMake and idf.py.
+
+## Running gdbgui
+
+If you've installed ESP-IDF from the Espressif extension, it will not install the components for gdbgui. You can install it with the following command:
+```
+$ cd ~/esp/v5.2.2/esp-idf
+$ ./install.sh --enable-gdbgui
+```
+
+When you start a new IDF terminal, the gdbgui option will be available.
+

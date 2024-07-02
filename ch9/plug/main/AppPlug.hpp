@@ -26,7 +26,7 @@ namespace app
 
         void init() override
         {
-            gpio_config_t config{GPIO_SEL_19,
+            gpio_config_t config{(1<<19),
                                  GPIO_MODE_OUTPUT,
                                  GPIO_PULLUP_DISABLE,
                                  GPIO_PULLDOWN_DISABLE,

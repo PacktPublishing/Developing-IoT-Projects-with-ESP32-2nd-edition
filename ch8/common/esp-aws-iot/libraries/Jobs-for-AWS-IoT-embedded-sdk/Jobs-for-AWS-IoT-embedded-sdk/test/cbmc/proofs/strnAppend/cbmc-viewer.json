@@ -1,0 +1,7 @@
+{ "expected-missing-functions":
+  [
+
+  ],
+  "proof-name": "strnAppend",
+  "proof-root": "../test/cbmc/proofs"
+}

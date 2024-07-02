@@ -22,23 +22,25 @@ def save_report(results):
 
 @pytest.mark.target('esp32s3')
 @pytest.mark.env('korvo-2')
-@pytest.mark.parametrize(
-    'config',
-    [
-        'hilexin',
-        # 'hiesp',
-    ],
-)
-def test_wakenet(dut: Dut)-> None:
+@pytest.mark.timeout(60000)
+@pytest.mark.config('hiesp')
+@pytest.mark.config('hilexin')
+def test_wakenet(config, noise, snr, dut: Dut)-> None:
 
     def match_log(pattern, timeout=18000):
         str = dut.expect(pattern, timeout=timeout).group(1).decode()
         return str
-    
+
     def match_log_int(pattern, timeout=18000):
         num = match_log(pattern, timeout)
         return int(num)
-
+    
+    dut.expect('perf_tester>', timeout=20)
+    mode = 'norm'
+    dut.write('config {} {} {}'.format(mode, noise, snr))
+    dut.expect('mode:{}, noise:{}, snr:{}'.format(mode, noise, snr), timeout=20)
+    dut.write('start')
+    timeout = 36000
     results = {}
     basedir = os.path.dirname(dut.logfile)
     report_file = os.path.join(basedir, "report.json")
@@ -52,9 +54,8 @@ def test_wakenet(dut: Dut)-> None:
 
     # Get the trigger times and memory siize
     # The following formats are defined in perf_tester.c
-    timeout = 18000  # 5 hours
-    psram_pattern = re.compile(rb'FAR PSRAM: (\d+) KB')
-    sram_pattern = re.compile(rb'FAR SRAM: (\d+) KB')
+    psram_pattern = re.compile(rb'AFE PSRAM: (\d+) KB')
+    sram_pattern = re.compile(rb'AFE SRAM: (\d+) KB')
     psram_size = match_log_int(psram_pattern, timeout)
     sram_size = match_log_int(sram_pattern, timeout)
     assert psram_size < 1120   # Assert that the psram size is under 1120 kB
@@ -83,3 +84,4 @@ def test_wakenet(dut: Dut)-> None:
 
     save_report(results)
     dut.expect('TEST DONE', timeout=timeout)
+    dut.write('\x03')

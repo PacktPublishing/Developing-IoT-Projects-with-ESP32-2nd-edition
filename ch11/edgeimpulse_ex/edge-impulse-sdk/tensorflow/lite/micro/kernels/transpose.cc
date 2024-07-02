@@ -12,48 +12,58 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-#include <stdint.h>
+#include "edge-impulse-sdk/tensorflow/lite/kernels/internal/reference/transpose.h"
 
 #include "edge-impulse-sdk/tensorflow/lite/c/common.h"
-#include "edge-impulse-sdk/tensorflow/lite/kernels/internal/compatibility.h"
-#include "edge-impulse-sdk/tensorflow/lite/kernels/internal/reference/transpose.h"
-#include "edge-impulse-sdk/tensorflow/lite/kernels/kernel_util.h"
-#include "edge-impulse-sdk/tensorflow/lite/kernels/padding.h"
 #include "edge-impulse-sdk/tensorflow/lite/kernels/internal/tensor_ctypes.h"
+#include "edge-impulse-sdk/tensorflow/lite/kernels/internal/types.h"
+#include "edge-impulse-sdk/tensorflow/lite/kernels/kernel_util.h"
 #include "edge-impulse-sdk/tensorflow/lite/micro/kernels/kernel_util.h"
+#include "edge-impulse-sdk/tensorflow/lite/micro/micro_log.h"
 
 namespace tflite {
-namespace ops {
-namespace builtin {
-namespace transpose {
+namespace {
 
 constexpr int kInputTensor = 0;
 constexpr int kPermTensor = 1;
 constexpr int kOutputTensor = 0;
 
+struct TransposeContext {
+  TransposeContext(TfLiteContext* context, TfLiteNode* node) {
+    micro_context = GetMicroContext(context);
+    input = micro_context->AllocateTempInputTensor(node, kInputTensor);
+    perm = micro_context->AllocateTempInputTensor(node, kPermTensor);
+    output = micro_context->AllocateTempOutputTensor(node, kOutputTensor);
+  }
+  ~TransposeContext() {
+    micro_context->DeallocateTempTfLiteTensor(input);
+    micro_context->DeallocateTempTfLiteTensor(perm);
+    micro_context->DeallocateTempTfLiteTensor(output);
+  }
+  MicroContext* micro_context;
+  TfLiteTensor* input;
+  TfLiteTensor* perm;
+  TfLiteTensor* output;
+};
+
 TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   TF_LITE_ENSURE_EQ(context, NumInputs(node), 2);
   TF_LITE_ENSURE_EQ(context, NumOutputs(node), 1);
 
-  const TfLiteTensor* input = GetInput(context, node, kInputTensor);
-  TF_LITE_ENSURE(context, input != nullptr);
-  const TfLiteTensor* perm = GetInput(context, node, kPermTensor);
-  TF_LITE_ENSURE(context, perm != nullptr);
-  TfLiteTensor* output = GetOutput(context, node, kOutputTensor);
-  TF_LITE_ENSURE(context, output != nullptr);
+  TransposeContext op_context(context, node);
 
   // Ensure validity of input tensor.
-  TF_LITE_ENSURE_MSG(context, NumDimensions(input) <= 5,
+  TF_LITE_ENSURE_MSG(context, NumDimensions(op_context.input) <= 5,
                      "Transpose op only supports 1D-5D input arrays.");
-  TF_LITE_ENSURE_TYPES_EQ(context, input->type,
-                          output->type);
+  TF_LITE_ENSURE_TYPES_EQ(context, op_context.input->type,
+                          op_context.output->type);
 
-  int dims = NumDimensions(input);
-  const int32_t* perm_data = perm->data.i32;
+  int dims = NumDimensions(op_context.input);
+  const int32_t* perm_data = GetTensorData<int32_t>(op_context.perm);
 
   // Ensure validity of the permutations tensor as a 1D tensor.
-  TF_LITE_ENSURE_EQ(context, NumDimensions(perm), 1);
-  TF_LITE_ENSURE_EQ(context, perm->dims->data[0], dims);
+  TF_LITE_ENSURE_EQ(context, NumDimensions(op_context.perm), 1);
+  TF_LITE_ENSURE_EQ(context, op_context.perm->dims->data[0], dims);
   for (int idx = 0; idx < dims; ++idx) {
     TF_LITE_ENSURE_MSG(context, (perm_data[idx] >= 0 && perm_data[idx] < dims),
                        "Transpose op permutations array is out of bounds.");
@@ -83,44 +93,30 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   switch (input->type) {
     case kTfLiteFloat32:
       reference_ops::Transpose(params, tflite::micro::GetTensorShape(input),
-                               input->data.f,
+                               tflite::micro::GetTensorData<float>(input),
                                tflite::micro::GetTensorShape(output),
-                               output->data.f);
+                               tflite::micro::GetTensorData<float>(output));
       break;
     case kTfLiteInt8:
       reference_ops::Transpose(params, tflite::micro::GetTensorShape(input),
-                               input->data.int8,
+                               tflite::micro::GetTensorData<int8_t>(input),
                                tflite::micro::GetTensorShape(output),
-                               output->data.int8);
-      break;
-    case kTfLiteInt32:
-      reference_ops::Transpose(params, tflite::micro::GetTensorShape(input),
-                               input->data.i32,
-                               tflite::micro::GetTensorShape(output),
-                               output->data.i32);
+                               tflite::micro::GetTensorData<int8_t>(output));
       break;
     default:
-      TF_LITE_KERNEL_LOG(context, "Type %s (%d) not supported.",
-                         TfLiteTypeGetName(input->type), input->type);
+      MicroPrintf(
+          "Type %s is currently not supported by Transpose. "
+          "Only float32 and int8 is supported",
+          TfLiteTypeGetName(input->type));
       return kTfLiteError;
   }
 
   return kTfLiteOk;
 }
 
-}  // namespace transpose
-}  // namespace builtin
-}  // namespace ops
+}  // namespace
 
 TfLiteRegistration Register_TRANSPOSE() {
-  return {/*init=*/nullptr,
-          /*free=*/nullptr,
-          /*prepare=*/ops::builtin::transpose::Prepare,
-          /*invoke=*/ops::builtin::transpose::Eval,
-          /*profiling_string=*/nullptr,
-          /*builtin_code=*/0,
-          /*custom_name=*/nullptr,
-          /*version=*/0};
+  return tflite::micro::RegisterOp(nullptr, Prepare, Eval);
 }
-
 }  // namespace tflite

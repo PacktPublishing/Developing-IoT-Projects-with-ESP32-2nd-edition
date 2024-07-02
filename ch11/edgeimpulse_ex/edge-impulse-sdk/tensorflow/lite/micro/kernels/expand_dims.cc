@@ -17,8 +17,8 @@ limitations under the License.
 #include "edge-impulse-sdk/tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "edge-impulse-sdk/tensorflow/lite/kernels/kernel_util.h"
 #include "edge-impulse-sdk/tensorflow/lite/micro/kernels/kernel_util.h"
+#include "edge-impulse-sdk/tensorflow/lite/micro/micro_log.h"
 #include "edge-impulse-sdk/tensorflow/lite/micro/micro_utils.h"
-#include "edge-impulse-sdk/tensorflow/lite/micro/micro_error_reporter.h"
 
 namespace tflite {
 namespace {
@@ -83,13 +83,18 @@ TfLiteStatus VerifyTensorDim(TfLiteContext* context, const TfLiteTensor* input,
 }
 
 TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+  MicroContext* micro_context = GetMicroContext(context);
+
   TF_LITE_ENSURE_EQ(context, NumInputs(node), 2);
   TF_LITE_ENSURE_EQ(context, NumOutputs(node), 1);
-  const TfLiteTensor* input = GetInput(context, node, kInputTensor);
+  TfLiteTensor* input =
+      micro_context->AllocateTempInputTensor(node, kInputTensor);
   TF_LITE_ENSURE(context, input != nullptr);
-  const TfLiteTensor* axis = GetInput(context, node, kAxisTensor);
+  TfLiteTensor* axis =
+      micro_context->AllocateTempInputTensor(node, kAxisTensor);
   TF_LITE_ENSURE(context, axis != nullptr);
-  TfLiteTensor* output = GetOutput(context, node, kOutputTensor);
+  TfLiteTensor* output =
+      micro_context->AllocateTempOutputTensor(node, kOutputTensor);
   TF_LITE_ENSURE(context, output != nullptr);
   output->type = input->type;
   if (IsDynamicTensor(axis)) {
@@ -98,6 +103,9 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   }
   TF_LITE_ENSURE_OK(context, VerifyTensorDim(context, input, axis, output));
 
+  micro_context->DeallocateTempTfLiteTensor(input);
+  micro_context->DeallocateTempTfLiteTensor(axis);
+  micro_context->DeallocateTempTfLiteTensor(output);
   return kTfLiteOk;
 }
 
@@ -135,14 +143,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 }  // namespace
 
 TfLiteRegistration Register_EXPAND_DIMS() {
-  return {/*init=*/nullptr,
-          /*free=*/nullptr,
-          /*prepare=*/Prepare,
-          /*invoke=*/Eval,
-          /*profiling_string=*/nullptr,
-          /*builtin_code=*/0,
-          /*custom_name=*/nullptr,
-          /*version=*/0};
+  return tflite::micro::RegisterOp(nullptr, Prepare, Eval);
 }
 
 }  // namespace tflite

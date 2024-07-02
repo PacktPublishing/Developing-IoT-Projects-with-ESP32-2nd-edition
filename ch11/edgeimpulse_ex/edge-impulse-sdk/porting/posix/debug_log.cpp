@@ -18,7 +18,6 @@
 #include "../ei_classifier_porting.h"
 #if EI_PORTING_POSIX == 1
 
-#include "edge-impulse-sdk/tensorflow/lite/micro/debug_log.h"
 #include <stdio.h>
 #include <stdarg.h>
 

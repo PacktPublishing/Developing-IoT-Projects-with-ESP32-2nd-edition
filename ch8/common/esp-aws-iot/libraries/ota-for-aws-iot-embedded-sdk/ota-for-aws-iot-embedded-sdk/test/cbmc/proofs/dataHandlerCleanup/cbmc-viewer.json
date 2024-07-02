@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "dataHandlerCleanup",
+  "proof-root": "test/cbmc/proofs"
+}

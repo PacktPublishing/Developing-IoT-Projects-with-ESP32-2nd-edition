@@ -26,7 +26,7 @@ limitations under the License.
 #include "edge-impulse-sdk/tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "edge-impulse-sdk/tensorflow/lite/kernels/kernel_util.h"
 #include "edge-impulse-sdk/tensorflow/lite/micro/kernels/kernel_util.h"
-#include "edge-impulse-sdk/tensorflow/lite/micro/kernels/micro_utils.h"
+#include "edge-impulse-sdk/tensorflow/lite/micro/micro_utils.h"
 
 namespace tflite {
 namespace ops {
@@ -42,10 +42,14 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   TF_LITE_ENSURE_EQ(context, NumInputs(node), 1);
   TF_LITE_ENSURE_EQ(context, NumOutputs(node), 1);
 
-  const TfLiteTensor* input = GetInput(context, node, kInputTensor);
-  TF_LITE_ENSURE(context, input != nullptr);
-  TfLiteTensor* output = GetOutput(context, node, kOutputTensor);
-  TF_LITE_ENSURE(context, output != nullptr);
+  // Check type and shape of the input tensor
+  MicroContext* micro_context = GetMicroContext(context);
+
+  TfLiteTensor* input =
+      micro_context->AllocateTempInputTensor(node, kInputTensor);
+
+  TfLiteTensor* output =
+      micro_context->AllocateTempOutputTensor(node, kOutputTensor);
 
   if (input->type != kTfLiteComplex64 || output->type != kTfLiteFloat32) {
       TF_LITE_KERNEL_LOG(context, "Types input %s (%d), output %s (%d) not supported.",
@@ -54,13 +58,19 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
       return kTfLiteError;
   }
 
+  micro_context->DeallocateTempTfLiteTensor(input);
+  micro_context->DeallocateTempTfLiteTensor(output);
+
   return kTfLiteOk;
 }
 
 TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
-  const TfLiteTensor* input = GetInput(context, node, kInputTensor);
+
+  const TfLiteEvalTensor* input =
+      tflite::micro::GetEvalInput(context, node, kInputTensor);
+  TfLiteEvalTensor* output =
+      tflite::micro::GetEvalOutput(context, node, kOutputTensor);
   TF_LITE_ENSURE(context, input != nullptr);
-  TfLiteTensor* output = GetOutput(context, node, kOutputTensor);
   TF_LITE_ENSURE(context, output != nullptr);
 
   size_t total_input_els = 1;

@@ -21,6 +21,7 @@
 #if (EI_CLASSIFIER_INFERENCING_ENGINE == EI_CLASSIFIER_TFLITE_FULL)
 
 #include "model-parameters/model_metadata.h"
+#include "tflite-model/trained_model_ops_define.h"
 
 #include <thread>
 #include "tensorflow-lite/tensorflow/lite/c/common.h"
@@ -28,7 +29,7 @@
 #include "tensorflow-lite/tensorflow/lite/kernels/register.h"
 #include "tensorflow-lite/tensorflow/lite/model.h"
 #include "tensorflow-lite/tensorflow/lite/optional_debug_tools.h"
-#include "edge-impulse-sdk/tensorflow/lite/kernels/tree_ensemble_classifier.h"
+#include "edge-impulse-sdk/tensorflow/lite/kernels/custom/tree_ensemble_classifier.h"
 #include "edge-impulse-sdk/classifier/ei_fill_result_struct.h"
 #include "edge-impulse-sdk/classifier/ei_model_types.h"
 #include "edge-impulse-sdk/classifier/inferencing_engines/tflite_helper.h"
@@ -137,7 +138,10 @@ extern "C" EI_IMPULSE_ERROR run_nn_inference_from_dsp(
 
 EI_IMPULSE_ERROR run_nn_inference(
     const ei_impulse_t *impulse,
-    ei::matrix_t *fmatrix,
+    ei_feature_t *fmatrix,
+    uint32_t learn_block_index,
+    uint32_t* input_block_ids,
+    uint32_t input_block_ids_size,
     ei_impulse_result_t *result,
     void *config_ptr,
     bool debug = false)
@@ -160,7 +164,8 @@ EI_IMPULSE_ERROR run_nn_inference(
         return EI_IMPULSE_OUTPUT_TENSOR_WAS_NULL;
     }
 
-    auto input_res = fill_input_tensor_from_matrix(fmatrix, input);
+    size_t mtx_size = impulse->dsp_blocks_size + impulse->learning_blocks_size;
+    auto input_res = fill_input_tensor_from_matrix(fmatrix, input, input_block_ids, input_block_ids_size, mtx_size);
     if (input_res != EI_IMPULSE_OK) {
         return input_res;
     }
@@ -178,6 +183,13 @@ EI_IMPULSE_ERROR run_nn_inference(
     result->timing.classification_us = ctx_end_us - ctx_start_us;
     result->timing.classification = (int)(result->timing.classification_us / 1000);
 
+    if (result->copy_output) {
+        auto output_res = fill_output_matrix_from_tensor(output, fmatrix[impulse->dsp_blocks_size + learn_block_index].matrix);
+        if (output_res != EI_IMPULSE_OK) {
+            return output_res;
+        }
+    }
+
     if (debug) {
         ei_printf("Predictions (time: %d ms.):\n", result->timing.classification);
     }
@@ -186,7 +198,7 @@ EI_IMPULSE_ERROR run_nn_inference(
     TfLiteTensor *labels_tensor = interpreter->output_tensor(block_config->output_labels_tensor);
 
     EI_IMPULSE_ERROR fill_res = fill_result_struct_from_output_tensor_tflite(
-        impulse, output, labels_tensor, scores_tensor, result, debug);
+        impulse, block_config, output, labels_tensor, scores_tensor, result, debug);
 
     if (fill_res != EI_IMPULSE_OK) {
         return fill_res;
@@ -210,12 +222,16 @@ __attribute__((unused)) int extract_tflite_features(signal_t *signal, matrix_t *
 
     ei_learning_block_config_tflite_graph_t ei_learning_block_config = {
         .implementation_version = 1,
+        .classification_mode = EI_CLASSIFIER_CLASSIFICATION_MODE_DSP,
         .block_id = dsp_config->block_id,
         .object_detection = false,
         .object_detection_last_layer = EI_CLASSIFIER_LAST_LAYER_UNKNOWN,
         .output_data_tensor = 0,
         .output_labels_tensor = 255,
         .output_score_tensor = 255,
+        .threshold = 0,
+        .quantized = 0,
+        .compiled = 0,
         .graph_config = &ei_config_tflite_graph_0
     };
 

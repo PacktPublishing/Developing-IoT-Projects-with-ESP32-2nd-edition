@@ -4,8 +4,9 @@ set(MODEL_FOLDER ..)
 set(EI_SDK_FOLDER ../edge-impulse-sdk)
 
 if(NOT CMAKE_BUILD_EARLY_EXPANSION)
-    MESSAGE("ESP-NN enabled.")
-    add_definitions(-DEI_CLASSIFIER_TFLITE_ENABLE_ESP_NN=1) # enables ESP-NN optimizations by Espressif
+add_definitions(-DEI_CLASSIFIER_TFLITE_ENABLE_ESP_NN=1) # enables ESP-NN optimizations by Espressif
+# disabled by default - enable if you use ESP32S3
+# add_definitions(-DEI_CLASSIFIER_TFLITE_ENABLE_ESP_NN_S3=1) # enables ESP-NN S3 optimizations by Espressif
 endif()
 
 OPTION(DEFINE_DEBUG
@@ -23,6 +24,8 @@ set(include_dirs
     ${MODEL_FOLDER}/tflite-model
     ${MODEL_FOLDER}/model-parameters
     ${EI_SDK_FOLDER}
+    ${EI_SDK_FOLDER}/porting/espressif/ESP-NN/include
+    ${EI_SDK_FOLDER}/porting/espressif/ESP-NN/src/common
 )
 
 include(${EI_SDK_FOLDER}/cmake/utils.cmake)
@@ -39,9 +42,7 @@ list(APPEND SOURCE_FILES ${CC_FILES})
 list(APPEND SOURCE_FILES ${MODEL_FILES})
 
 idf_component_register(SRCS "main.cpp" "${SOURCE_FILES}"
-                       INCLUDE_DIRS "${include_dirs}" 
-                       "../edge-impulse-sdk/porting/espressif/ESP-NN/include"
-                       "../edge-impulse-sdk/porting/espressif/ESP-NN/src/common"
-                       "../edge-impulse-sdk/porting/espressif/ESP-NN/tests/include")
+                       INCLUDE_DIRS "${include_dirs}")
 
-target_compile_options(${COMPONENT_LIB} PRIVATE -O3)
+target_compile_options(${COMPONENT_LIB} PRIVATE -std=gnu++17)
+

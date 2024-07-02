@@ -14,10 +14,9 @@ if(CONFIG_ESP32_S3_BOX_BOARD)
     list(APPEND BSP_BOARD_SRC "./boards/esp32s3-box")
 endif()
 
-if(CONFIG_ESP32_S3_BOX_LITE_BOARD)
-    list(APPEND BSP_BOARD_SRC "./boards/esp32s3-box-lite")
+if(CONFIG_ESP32_S3_BOX_3_BOARD)
+    list(APPEND BSP_BOARD_SRC "./boards/esp32s3-box-3")
 endif()
-
 
 if(CONFIG_ESP32_S3_EYE_BOARD)
     list(APPEND BSP_BOARD_SRC "./boards/esp32s3-eye")
@@ -26,18 +25,15 @@ endif()
 idf_component_register(
     SRC_DIRS
         ./
-        "./led"
         ${BSP_BOARD_SRC}
     INCLUDE_DIRS
         "include"
-        "codec/include"
         "boards/include"
-        "./led/include"
     REQUIRES
         driver
         fatfs
         spiffs
-        esp_codec_dev)
+        )
 
 component_compile_options(-w)
 target_compile_options(${COMPONENT_LIB} PRIVATE "-Wno-format")

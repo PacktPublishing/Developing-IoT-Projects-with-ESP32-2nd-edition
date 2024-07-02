@@ -1,0 +1,11 @@
+version: "1.0.1"
+description: Diagnostics component used in ESP Insights, which is a remote diagnostics solution to monitor the health of ESP devices in the field.
+url: https://github.com/espressif/esp-insights/tree/main/components/esp_diagnostics
+repository: https://github.com/espressif/esp-insights.git
+issues: https://github.com/espressif/esp-insights/issues
+dependencies:
+  idf:
+    version: ">=4.1"
+  espressif/rmaker_common:
+    version: "~1.4.0"
+    override_path: '../rmaker_common/'

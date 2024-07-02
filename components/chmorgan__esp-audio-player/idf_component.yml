@@ -1,7 +1,8 @@
 dependencies:
-  chmorgan/esp-libhelix-mp3: '>=1.0.0,<2.0.0'
+  chmorgan/esp-libhelix-mp3:
+    version: '>=1.0.0,<2.0.0'
   idf:
-    version: '>=4.1.0'
+    version: '>=5.0'
 description: Lightweight audio decoding component for esp processors
 url: https://github.com/chmorgan/esp-audio-player
-version: 1.0.2
+version: 1.0.5

@@ -53,7 +53,7 @@ static EI_IMPULSE_ERROR inference_tflite_setup(
 
     TfLiteStatus init_status = graph_config->model_init(ei_aligned_calloc);
     if (init_status != kTfLiteOk) {
-        ei_printf("Failed to allocate TFLite arena (error code %d)\n", init_status);
+        ei_printf("Failed to initialize the model (error code %d)\n", init_status);
         return EI_IMPULSE_TFLITE_ARENA_ALLOC_FAILED;
     }
 
@@ -96,7 +96,7 @@ static EI_IMPULSE_ERROR inference_tflite_setup(
  */
 static EI_IMPULSE_ERROR inference_tflite_run(
     const ei_impulse_t *impulse,
-    ei_config_tflite_eon_graph_t *config,
+    ei_learning_block_config_tflite_graph_t *block_config,
     uint64_t ctx_start_us,
     TfLiteTensor* output,
     TfLiteTensor* labels_tensor,
@@ -105,7 +105,9 @@ static EI_IMPULSE_ERROR inference_tflite_run(
     ei_impulse_result_t *result,
     bool debug) {
 
-    if(config->model_invoke() != kTfLiteOk) {
+    ei_config_tflite_eon_graph_t *graph_config = (ei_config_tflite_eon_graph_t*)block_config->graph_config;
+
+    if (graph_config->model_invoke() != kTfLiteOk) {
         return EI_IMPULSE_TFLITE_ERROR;
     }
 
@@ -120,9 +122,7 @@ static EI_IMPULSE_ERROR inference_tflite_run(
     }
 
     EI_IMPULSE_ERROR fill_res = fill_result_struct_from_output_tensor_tflite(
-        impulse, output, labels_tensor, scores_tensor, result, debug);
-
-    config->model_reset(ei_aligned_free);
+        impulse, block_config, output, labels_tensor, scores_tensor, result, debug);
 
     if (fill_res != EI_IMPULSE_OK) {
         return fill_res;
@@ -203,7 +203,10 @@ EI_IMPULSE_ERROR run_nn_inference_from_dsp(
  */
 EI_IMPULSE_ERROR run_nn_inference(
     const ei_impulse_t *impulse,
-    ei::matrix_t *fmatrix,
+    ei_feature_t *fmatrix,
+    uint32_t learn_block_index,
+    uint32_t* input_block_ids,
+    uint32_t input_block_ids_size,
     ei_impulse_result_t *result,
     void *config_ptr,
     bool debug = false)
@@ -234,19 +237,29 @@ EI_IMPULSE_ERROR run_nn_inference(
 
     uint8_t* tensor_arena = static_cast<uint8_t*>(p_tensor_arena.get());
 
-    auto input_res = fill_input_tensor_from_matrix(fmatrix, &input);
+    size_t mtx_size = impulse->dsp_blocks_size + impulse->learning_blocks_size;
+    auto input_res = fill_input_tensor_from_matrix(fmatrix, &input, input_block_ids, input_block_ids_size, mtx_size);
     if (input_res != EI_IMPULSE_OK) {
         return input_res;
     }
 
     EI_IMPULSE_ERROR run_res = inference_tflite_run(
         impulse,
-        graph_config,
+        block_config,
         ctx_start_us,
         &output,
         &output_labels,
         &output_scores,
         tensor_arena, result, debug);
+
+    if (result->copy_output) {
+        auto output_res = fill_output_matrix_from_tensor(&output, fmatrix[impulse->dsp_blocks_size + learn_block_index].matrix);
+        if (output_res != EI_IMPULSE_OK) {
+            return output_res;
+        }
+    }
+
+    graph_config->model_reset(ei_aligned_free);
 
     result->timing.classification_us = ei_read_timer_us() - ctx_start_us;
 
@@ -333,7 +346,7 @@ EI_IMPULSE_ERROR run_nn_inference_image_quantized(
 
     EI_IMPULSE_ERROR run_res = inference_tflite_run(
         impulse,
-        graph_config,
+        block_config,
         ctx_start_us,
         &output,
         &output_labels,
@@ -341,6 +354,9 @@ EI_IMPULSE_ERROR run_nn_inference_image_quantized(
         static_cast<uint8_t*>(p_tensor_arena.get()),
         result,
         debug);
+
+    graph_config->model_reset(ei_aligned_free);
+
     if (run_res != EI_IMPULSE_OK) {
         return run_res;
     }
@@ -365,12 +381,14 @@ __attribute__((unused)) int extract_tflite_eon_features(signal_t *signal, matrix
 
     ei_learning_block_config_tflite_graph_t ei_learning_block_config = {
         .implementation_version = 1,
+        .classification_mode = EI_CLASSIFIER_CLASSIFICATION_MODE_DSP,
         .block_id = dsp_config->block_id,
         .object_detection = false,
         .object_detection_last_layer = EI_CLASSIFIER_LAST_LAYER_UNKNOWN,
         .output_data_tensor = 0,
         .output_labels_tensor = 255,
         .output_score_tensor = 255,
+        .threshold = 0,
         .quantized = 0,
         .compiled = 1,
         .graph_config = &ei_config_tflite_graph_0

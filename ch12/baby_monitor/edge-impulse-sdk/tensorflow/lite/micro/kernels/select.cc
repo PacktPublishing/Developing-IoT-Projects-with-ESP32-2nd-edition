@@ -112,6 +112,12 @@ TfLiteStatus SelectPrepare(TfLiteContext* context, TfLiteNode* node) {
       GetTensorShape(input_x).FlatSize() == 1 &&
       GetTensorShape(input_y).FlatSize() == 1 &&
       GetTensorShape(output).FlatSize() == 1) {
+
+    micro_context->DeallocateTempTfLiteTensor(input_condition);
+    micro_context->DeallocateTempTfLiteTensor(input_x);
+    micro_context->DeallocateTempTfLiteTensor(input_y);
+    micro_context->DeallocateTempTfLiteTensor(output);
+
     return kTfLiteOk;
   }
 
@@ -143,6 +149,10 @@ TfLiteStatus SelectPrepare(TfLiteContext* context, TfLiteNode* node) {
         break;
       }
       default:
+        micro_context->DeallocateTempTfLiteTensor(input_condition);
+        micro_context->DeallocateTempTfLiteTensor(input_x);
+        micro_context->DeallocateTempTfLiteTensor(input_y);
+        micro_context->DeallocateTempTfLiteTensor(output);
         return kTfLiteError;
     }
   } else {

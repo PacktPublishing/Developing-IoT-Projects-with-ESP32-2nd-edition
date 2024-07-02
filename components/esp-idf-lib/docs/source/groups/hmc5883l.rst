@@ -1,5 +1,8 @@
-hmc5883l - Driver for HMC5883L 3-axis digital compass
-=====================================================
+.. _hmc5883l:
+
+hmc5883l - Driver for HMC5883L and HMC5983L 3-axis digital compass
+==================================================================
 
 .. doxygengroup:: hmc5883l
+   :members:
 

@@ -148,18 +148,15 @@ void detect_Task(void *arg)
 void app_main()
 {
     models = esp_srmodel_init("model");
-    ESP_ERROR_CHECK(esp_board_init(AUDIO_HAL_16K_SAMPLES, 1, 16));
+    ESP_ERROR_CHECK(esp_board_init(8000, 1, 16));
     // ESP_ERROR_CHECK(esp_sdcard_init("/sdcard", 10));
-#if defined CONFIG_ESP32_KORVO_V1_1_BOARD
-    led_init();
-#endif
 
 
     afe_handle = (esp_afe_sr_iface_t *)&ESP_AFE_SR_HANDLE;
     afe_config_t afe_config = AFE_CONFIG_DEFAULT();
 
     afe_config.wakenet_model_name = esp_srmodel_filter(models, ESP_WN_PREFIX, NULL);;
-#if defined CONFIG_ESP32_S3_BOX_BOARD || defined CONFIG_ESP32_S3_BOX_LITE_BOARD || defined CONFIG_ESP32_S3_EYE_BOARD
+#if defined CONFIG_ESP32_S3_BOX_BOARD || defined CONFIG_ESP32_S3_EYE_BOARD
     afe_config.aec_init = false;
     #if defined CONFIG_ESP32_S3_EYE_BOARD
         afe_config.pcm_config.total_ch_num = 2;
@@ -174,7 +171,7 @@ void app_main()
     xTaskCreatePinnedToCore(&feed_Task, "feed", 8 * 1024, (void*)afe_data, 5, NULL, 0);
 
 #if defined  CONFIG_ESP32_S3_KORVO_1_V4_0_BOARD || defined CONFIG_ESP32_KORVO_V1_1_BOARD
-    xTaskCreatePinnedToCore(&led_Task, "led", 2 * 1024, NULL, 5, NULL, 0);
+    xTaskCreatePinnedToCore(&led_Task, "led", 3 * 1024, NULL, 5, NULL, 0);
 #endif
 #if defined  CONFIG_ESP32_S3_KORVO_1_V4_0_BOARD || CONFIG_ESP32_S3_KORVO_2_V3_0_BOARD || CONFIG_ESP32_KORVO_V1_1_BOARD
     xTaskCreatePinnedToCore(&play_music, "play", 2 * 1024, NULL, 5, NULL, 1);

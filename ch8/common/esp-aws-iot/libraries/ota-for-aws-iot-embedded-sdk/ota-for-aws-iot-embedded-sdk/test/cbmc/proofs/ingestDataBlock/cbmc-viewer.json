@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "ingestDataBlock",
+  "proof-root": "test/cbmc/proofs"
+}

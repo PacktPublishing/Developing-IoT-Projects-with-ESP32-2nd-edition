@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "initFileHandler",
+  "proof-root": "test/cbmc/proofs"
+}

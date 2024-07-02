@@ -416,12 +416,16 @@ static __inline Word64 SAR64(Word64 x, int n)
 
 #elif defined(__xtensa__)
 
+#include "xtensa/config/core-isa.h"
+
 typedef long long Word64;
 
 static __inline Word64 MADD64(Word64 sum64, int x, int y)
 {
     return (sum64 + ((long long)x * y));
 }
+
+#if XCHAL_HAVE_MUL32_HIGH
 
 static __inline int MULSHIFT32(int x, int y)
 {
@@ -440,12 +444,26 @@ static __inline int MULSHIFT32(int x, int y)
     return ret;
 }
 
+#else
+
+#error Missing definition of MULSHIFT32
+
+#endif
+
+#if XCHAL_HAVE_ABS
+
 static __inline int FASTABS(int x)
 {
     int ret;
     asm volatile ("abs %0, %1" : "=r" (ret) : "r" (x));
     return ret;
 }
+
+#else
+
+#error Missing definition of FASTABS
+
+#endif
 
 static __inline Word64 SAR64(Word64 x, int n)
 {

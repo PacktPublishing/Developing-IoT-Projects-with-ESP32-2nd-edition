@@ -1,3 +1,4 @@
+#include "bsp_board.h"
 
 #include "AppDriver.hpp"
 #include "AppSensorNode.hpp"
@@ -13,8 +14,21 @@ namespace
 extern "C" void app_main(void)
 {
     app_driver.init();
-    app_ui.init();
     app_sensor_node.init();
+
+    // LVGL initialisation is on BSP
+    bsp_display_cfg_t cfg = {
+        .lvgl_port_cfg = ESP_LVGL_PORT_INIT_CONFIG(),
+        .buffer_size = BSP_LCD_H_RES * CONFIG_BSP_LCD_DRAW_BUF_HEIGHT,
+        .double_buffer = 0,
+        .flags = {
+            .buff_dma = true,
+        }};
+    bsp_display_start_with_config(&cfg);
+    bsp_display_backlight_on();
+    bsp_board_init();
+
+    app_ui.init();
 
     auto sensor_reading_handler = [](const app::SensorReading_t &r) -> void
     {

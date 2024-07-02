@@ -609,8 +609,8 @@ public:
                 EIDSP_ERR(ret);
             }
 
-            // normalize data (only when version is above 3)
-            if (version >= 3) {
+            // normalize data (only when version is 3)
+            if (version == 3) {
                 // it might be that everything is already normalized here...
                 bool all_between_min_1_and_1 = true;
                 for (size_t ix = 0; ix < signal_frame.rows * signal_frame.cols; ix++) {

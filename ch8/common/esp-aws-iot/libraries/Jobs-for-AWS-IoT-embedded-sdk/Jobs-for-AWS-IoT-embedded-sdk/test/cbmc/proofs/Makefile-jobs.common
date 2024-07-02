@@ -1,0 +1,44 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+HARNESS_ENTRY=harness
+
+ifdef CBMC_MAX_BUFSIZE
+    DEFINES += -DCBMC_MAX_BUFSIZE=$(CBMC_MAX_BUFSIZE)
+endif
+ifdef THINGNAME_MAX_LENGTH
+    DEFINES += -DTHINGNAME_MAX_LENGTH=$(THINGNAME_MAX_LENGTH)
+endif
+ifdef JOBID_MAX_LENGTH
+    DEFINES += -DJOBID_MAX_LENGTH=$(JOBID_MAX_LENGTH)
+endif
+
+INCLUDES += -I$(CBMC_ROOT)/include
+INCLUDES += -I$(SRCDIR)/source/include
+
+PROOF_SOURCES += $(PROOFDIR)/$(HARNESS_FILE).c
+PROJECT_SOURCES += $(PROOFDIR)/jobs.c
+
+include ../Makefile.common
+
+# remove static constraints to facilitate proofs
+# replace some functions with stubs by renaming originals
+# (see SED_EXPR in proof Makefiles)
+
+# Command to pass to sed to patch jobs.c.
+# The characters " and # must be escaped with backslash.
+JOBS_SED_EXPR = 1s/^/\#include \"jobs_annex.h\" /; s/^static //; $(SED_EXPR)
+
+$(PROOFDIR)/jobs.c: $(SRCDIR)/source/jobs.c
+	$(LITANI) add-job \
+	  --command \
+	    "sed -E '$(JOBS_SED_EXPR)' $^ > $@" \
+	  --inputs $^ \
+	  --outputs $@ \
+	  --stdout-file $(LOGDIR)/jobs-log.txt \
+	  --ci-stage build \
+	  --pipeline-name "$(PROOF_UID)" \
+	  --description "$(PROOF_UID): patching jobs.c"
+
+cleanclean: veryclean
+	-$(RM) $(PROOFDIR)/jobs.c

@@ -1,3 +1,27 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2015 Frank Bargstedt
+ * Copyright (c) 2018 Ruslan V. Uss <unclerus@gmail.com>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 /**
  * @file bmp180.h
  * @defgroup bmp180 bmp180
@@ -7,8 +31,8 @@
  *
  * Ported from esp-open-rtos
  *
- * Copyright (C) 2015 Frank Bargstedt\n
- * Copyright (C) 2018 Ruslan V. Uss <unclerus@gmail.com>
+ * Copyright (c) 2015 Frank Bargstedt\n
+ * Copyright (c) 2018 Ruslan V. Uss <unclerus@gmail.com>
  *
  * MIT Licensed as described in the file LICENSE
  */
@@ -61,43 +85,40 @@ typedef enum
 
 
 /**
- * @brief Initialize device descriptior
- * @param[out] dev Pointer to device descriptor
- * @param[in] port I2C port number
- * @param[in] sda_gpio GPIO pin number for SDA
- * @param[in] scl_gpio GPIO pin number for SCL
- * @return ESP_OK if no errors occured
+ * @brief Initialize device descriptor
+ *
+ * @param dev Device descriptor
+ * @param port I2C port number
+ * @param sda_gpio GPIO pin number for SDA
+ * @param scl_gpio GPIO pin number for SCL
+ * @return `ESP_OK` on success
  */
 esp_err_t bmp180_init_desc(bmp180_dev_t *dev, i2c_port_t port, gpio_num_t sda_gpio, gpio_num_t scl_gpio);
 
 /**
  * @brief Free device descriptor
+ *
  * @param dev Pointer to BMP180 device descriptor
  * @return `ESP_OK` on success
  */
 esp_err_t bmp180_free_desc(bmp180_dev_t *dev);
 
 /**
- * Init bmp180 driver
+ * @brief Initialize device
+ *
  * @param dev Pointer to BMP180 device descriptor
- * @return ESP_OK on success
+ * @return `ESP_OK` on success
  */
 esp_err_t bmp180_init(bmp180_dev_t *dev);
 
 /**
- * Check BMP180 availability
- * @param i2c_dev I2C device descriptor
- * @return true if bmp180 is available
- */
-bool bmp180_is_available(i2c_dev_t *i2c_dev);
-
-/**
- * Measure temperature and pressure
+ * @brief Measure temperature and pressure
+ *
  * @param dev Pointer to BMP180 device descriptor
- * @param temperature Temperature in degrees Celsius
- * @param pressure Pressure in Pa
+ * @param[out] temperature Temperature in degrees Celsius
+ * @param[out] pressure Pressure in Pa
  * @param oss Measurement mode
- * @return ESP_OK on success
+ * @return `ESP_OK` on success
  */
 esp_err_t bmp180_measure(bmp180_dev_t *dev, float *temperature, uint32_t *pressure, bmp180_mode_t oss);
 

@@ -1,0 +1,7 @@
+{ "expected-missing-functions":
+  [
+    "strnEq"
+  ],
+  "proof-name": "JSON_Search",
+  "proof-root": "test/cbmc/proofs"
+}

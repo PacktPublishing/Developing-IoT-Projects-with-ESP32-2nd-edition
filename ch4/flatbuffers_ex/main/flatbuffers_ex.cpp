@@ -28,14 +28,14 @@ extern "C" void app_main(void)
 {
     m_buffer = reinterpret_cast<uint8_t *>(heap_caps_malloc(BUFFERSIZE, MALLOC_CAP_SPIRAM));
 
-    auto serialize = [](void *)
+    auto serialize = [](void *, void *)
     {
         ESP_LOGI(TAG, "serializing..");
         size_t len = m_logger.serialize(m_buffer);
         ESP_LOG_BUFFER_HEX(TAG, m_buffer, len);
     };
 
-    auto deserialize = [](void *)
+    auto deserialize = [](void *, void *)
     {
         ESP_LOGI(TAG, "deserializing..");
         m_client.consume(m_buffer);

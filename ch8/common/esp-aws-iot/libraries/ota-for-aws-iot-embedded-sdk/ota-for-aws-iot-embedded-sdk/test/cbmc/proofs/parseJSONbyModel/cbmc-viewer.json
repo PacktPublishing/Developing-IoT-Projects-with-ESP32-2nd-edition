@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "parseJSONbyModel",
+  "proof-root": "test/cbmc/proofs"
+}

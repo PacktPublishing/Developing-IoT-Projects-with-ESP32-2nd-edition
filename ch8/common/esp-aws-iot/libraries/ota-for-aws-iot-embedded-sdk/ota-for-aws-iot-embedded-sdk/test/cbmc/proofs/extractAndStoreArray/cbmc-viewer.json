@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "extractAndStoreArray",
+  "proof-root": "test/cbmc/proofs"
+}

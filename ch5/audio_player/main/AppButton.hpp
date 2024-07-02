@@ -4,8 +4,6 @@
 #include "freertos/queue.h"
 
 #include "bsp_board.h"
-#include "bsp_btn.h"
-
 #include "esp_log.h"
 
 namespace app
@@ -24,7 +22,7 @@ namespace app
 namespace
 {
     template <app::eBtnEvent>
-    void button_event_handler(void *param);
+    void button_event_handler(void *param, void *user_data);
 }
 
 namespace app
@@ -53,12 +51,6 @@ namespace app
                                       button_event_handler<app::eBtnEvent::M_DCLICK>, this);
         }
 
-        static AppButton &getObject(void *btn_ptr)
-        {
-            button_dev_t *btn_dev = reinterpret_cast<button_dev_t *>(btn_ptr);
-            return *(reinterpret_cast<app::AppButton *>(btn_dev->cb_user_data));
-        }
-
         QueueHandle_t getEventQueue(void) const { return m_event_queue; }
     };
 }
@@ -66,9 +58,9 @@ namespace app
 namespace
 {
     template <app::eBtnEvent E>
-    void button_event_handler(void *btn_ptr)
+    void button_event_handler(void *btn_ptr, void *user_data)
     {
-        app::AppButton &app_btn = app::AppButton::getObject(btn_ptr);
+        app::AppButton &app_btn = *(reinterpret_cast<app::AppButton *>(user_data));
         app::eBtnEvent evt{E};
         xQueueSend(app_btn.getEventQueue(), (void *)(&evt), 0);
     }

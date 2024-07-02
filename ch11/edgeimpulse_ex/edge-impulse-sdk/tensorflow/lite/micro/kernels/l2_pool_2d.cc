@@ -21,6 +21,7 @@ limitations under the License.
 #include "edge-impulse-sdk/tensorflow/lite/kernels/kernel_util.h"
 #include "edge-impulse-sdk/tensorflow/lite/kernels/padding.h"
 #include "edge-impulse-sdk/tensorflow/lite/micro/kernels/kernel_util.h"
+#include "edge-impulse-sdk/tensorflow/lite/micro/micro_log.h"
 
 namespace tflite {
 namespace {
@@ -36,15 +37,18 @@ constexpr int kTensorShapeRank = 4;
 enum { kBatchRank = 0, kHeightRank, kWidthRank, kChannelRank };
 
 TfLiteStatus L2Prepare(TfLiteContext* context, TfLiteNode* node) {
+  MicroContext* micro_context = GetMicroContext(context);
+
   auto* params = static_cast<TfLitePoolParams*>(node->builtin_data);
 
   TF_LITE_ENSURE_EQ(context, NumInputs(node), 1);
   TF_LITE_ENSURE_EQ(context, NumOutputs(node), 1);
-  TfLiteTensor* output;
-  TF_LITE_ENSURE_OK(context,
-                    GetOutputSafe(context, node, kOutputTensor, &output));
-  const TfLiteTensor* input;
-  TF_LITE_ENSURE_OK(context, GetInputSafe(context, node, kInputTensor, &input));
+  TfLiteTensor* output =
+      micro_context->AllocateTempOutputTensor(node, kOutputTensor);
+  TF_LITE_ENSURE(context, output != nullptr);
+  TfLiteTensor* input =
+      micro_context->AllocateTempInputTensor(node, kInputTensor);
+  TF_LITE_ENSURE(context, input != nullptr);
   TF_LITE_ENSURE_EQ(context, NumDimensions(input), kTensorShapeRank);
   TF_LITE_ENSURE_EQ(context, NumDimensions(output), kTensorShapeRank);
   TF_LITE_ENSURE_TYPES_EQ(context, input->type, output->type);
@@ -70,11 +74,20 @@ TfLiteStatus L2Prepare(TfLiteContext* context, TfLiteNode* node) {
   // The dims storage is expected to be the same area in memory
   // for both TfLiteTensor and TfLiteEvalTensor.  This is important
   // because TfLiteTensor in the MicroInterpreter is a temporary
-  // allocation.
+  // allocation.  For the KernelRunner interpreter, TfLiteEvalTensor
+  // is a temporary allocation.  We must therefore relocate the dims
+  // from the FlatBuffer to the persistant storage arena.
+  TfLiteEvalTensor* output_eval =
+      tflite::micro::GetEvalOutput(context, node, kOutputTensor);
+  TF_LITE_ENSURE_OK(context, tflite::micro::CreateWritableTensorDimsWithCopy(
+                                 context, output, output_eval));
   output->dims->data[kBatchRank] = batches;
   output->dims->data[kHeightRank] = out_height;
   output->dims->data[kWidthRank] = out_width;
   output->dims->data[kChannelRank] = channels_out;
+
+  micro_context->DeallocateTempTfLiteTensor(output);
+  micro_context->DeallocateTempTfLiteTensor(input);
 
   return kTfLiteOk;
 }
@@ -113,9 +126,8 @@ TfLiteStatus L2Eval(TfLiteContext* context, TfLiteNode* node) {
       L2EvalFloat(*params, *input, &op_params, output);
       break;
     default:
-      TF_LITE_KERNEL_LOG(context,
-                         "L2_POOL_2D only supports float32 currently, got %s.",
-                         TfLiteTypeGetName(input->type));
+      MicroPrintf("L2_POOL_2D only supports float32 currently, got %s.",
+                  TfLiteTypeGetName(input->type));
       return kTfLiteError;
   }
   return kTfLiteOk;
@@ -124,14 +136,7 @@ TfLiteStatus L2Eval(TfLiteContext* context, TfLiteNode* node) {
 }  // namespace
 
 TfLiteRegistration Register_L2_POOL_2D() {
-  return {/*init=*/nullptr,
-          /*free=*/nullptr,
-          /*prepare=*/L2Prepare,
-          /*invoke=*/L2Eval,
-          /*profiling_string=*/nullptr,
-          /*builtin_code=*/0,
-          /*custom_name=*/nullptr,
-          /*version=*/0};
+  return tflite::micro::RegisterOp(nullptr, L2Prepare, L2Eval);
 }
 
 }  // namespace tflite

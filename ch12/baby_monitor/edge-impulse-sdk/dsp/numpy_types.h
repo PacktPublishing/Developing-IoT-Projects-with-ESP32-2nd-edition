@@ -24,13 +24,13 @@
 #include <stddef.h>
 #ifdef __cplusplus
 #include <functional>
+#include "edge-impulse-sdk/dsp/ei_vector.h"
 #ifdef __MBED__
 #include "mbed.h"
 #endif // __MBED__
 #endif // __cplusplus
 #include "config.hpp"
-
-#include "../porting/ei_classifier_porting.h"
+#include "edge-impulse-sdk/dsp/returntypes.h"
 
 #if EIDSP_TRACK_ALLOCATIONS
 #include "memory.hpp"
@@ -142,6 +142,8 @@ typedef struct ei_matrix {
         return buffer + row * cols;
     }
 
+    ei_matrix(ei_vector<float> &in) : ei_matrix(1, in.size(), in.data()) {
+    }
 #endif // #ifdef __cplusplus
 } matrix_t;
 
@@ -555,16 +557,47 @@ typedef enum {
 } DCT_NORMALIZATION_MODE;
 
 /**
- * Sensor signal structure
+ * @addtogroup ei_structs
+ * @{
+ */
+
+/**
+ * @brief Holds the callback pointer for retrieving raw data and the length 
+ *  of data to be retrieved.
+ * 
+ *  Holds the callback function, `get_data(size_t offset, size_t length, float 
+ *  *out_ptr)`. This callback should be implemented by the user and fills the memory
+ *  location given by `*out_ptr` with raw features. Features must be flattened to a
+ *  1-dimensional vector, as described in 
+ *  [this guide](https://docs.edgeimpulse.com/docs/deploy-your-model-as-a-c-library#signal-structure).
+ * 
+ *  `get_data()` may be called multiple times during preprocessing or inference (e.g.
+ *  during execution of 
+ *  [run_classifier()](https://docs.edgeimpulse.com/reference/run_classifier) or
+ *  [run_classifier_continuous()](https://docs.edgeimpulse.com/reference/run_classifier_continuous)). 
+ *  The `offset` argument will update to point to new data, and `length` data must 
+ *  be copied into the location specified by `out_ptr`. This scheme allows raw features
+ *  to be stored in RAM or flash memory and paged in as necessary.
+ * 
+ *  Note that `get_data()` (even after multiple calls during a single execution of
+ *  `run_classifier()` or `run_classifier_continuous()`) will never request more than a
+ *  total number of features as given by `total_length`.
+ * 
+ * **Source**: [dsp/numpy_types.h](https://github.com/edgeimpulse/inferencing-sdk-cpp/blob/master/dsp/numpy_types.h)
+ * 
+ * **Example**: [standalone inferencing main.cpp](https://github.com/edgeimpulse/example-standalone-inferencing/blob/master/source/main.cpp)
  */
 typedef struct ei_signal_t {
     /**
-     * A function to retrieve part of the sensor signal
-     * No bytes will be requested outside of the `total_length`.
-     * @param offset The offset in the signal
-     * @param length The total length of the signal
-     * @param out_ptr An out buffer to set the signal data
-     */
+     * Callback function to be implemented by the user. Parameters are given as 
+     * `get_data(size_t offset, size_t length, float *out_ptr)` and should return an 
+     * int (e.g. `EIDSP_OK` if copying completed successfully). No bytes will be
+     * requested outside of the `total_length`.
+     * Callback parameters:  
+     * `offset`: The offset in the signal  
+     * `length`: The number of samples to write into `out_ptr`  
+     * `out_ptr`: An out buffer to set the signal data  
+    */
 #if EIDSP_SIGNAL_C_FN_POINTER == 1
     int (*get_data)(size_t, size_t, float *);
 #else
@@ -575,8 +608,15 @@ typedef struct ei_signal_t {
 #endif // __MBED__
 #endif // EIDSP_SIGNAL_C_FN_POINTER == 1
 
+    /**
+     * Total number of samples the user will provide (via get_data).  This value should match either the total number of raw features required for a full window (ie, the window size in Studio, but in samples), OR, if using run_classifier_continuous(), the number of samples in a single slice)
+     *  for a new slice (`run_classifier_continuous()`) in order to perform 
+     *  preprocessing and inference.
+    */
     size_t total_length;
 } signal_t;
+
+/** @} */
 
 #ifdef __cplusplus
 } // namespace ei {

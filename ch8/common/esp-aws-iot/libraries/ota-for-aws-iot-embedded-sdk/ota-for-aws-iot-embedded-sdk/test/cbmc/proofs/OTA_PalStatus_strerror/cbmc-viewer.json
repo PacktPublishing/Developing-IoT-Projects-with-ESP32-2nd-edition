@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "OTA_PalStatus_strerror",
+  "proof-root": "test/cbmc/proofs"
+}

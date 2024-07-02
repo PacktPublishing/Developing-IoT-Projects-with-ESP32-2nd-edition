@@ -1,0 +1,8 @@
+.. _ds3502:
+
+ds3502 - Driver for nonvolatile digital potentiometer DS3502
+============================================================
+
+.. doxygengroup:: ds3502
+   :members:
+

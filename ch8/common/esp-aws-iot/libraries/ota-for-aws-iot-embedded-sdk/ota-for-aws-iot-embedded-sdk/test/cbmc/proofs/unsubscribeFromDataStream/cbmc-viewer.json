@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "unsubscribeFromDataStream",
+  "proof-root": "test/cbmc/proofs"
+}

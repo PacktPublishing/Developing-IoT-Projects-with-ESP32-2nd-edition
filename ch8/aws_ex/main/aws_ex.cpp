@@ -1,11 +1,11 @@
 #include <functional>
-#include "AppWifiSoftAp.hpp"
+#include "AppWifiBle.hpp"
 #include "AppAwsClient.hpp"
 #include "AppSensor.hpp"
 
 namespace
 {
-    app::AppWifiSoftAp app_wifi;
+    app::AppWifiBle app_wifi;
     app::AppAwsClient app_client;
     app::AppSensor app_sensor;
 }

@@ -21,12 +21,17 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <cstring>
 // Include FreeRTOS for delay
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
 // for millis and micros
 #include "esp_timer.h"
+#include "esp_idf_version.h"
+
+// memory handling
+#include "esp_heap_caps.h"
 
 #define EI_WEAK_FN __attribute__((weak))
 
@@ -35,7 +40,7 @@ EI_WEAK_FN EI_IMPULSE_ERROR ei_run_impulse_check_canceled() {
 }
 
 EI_WEAK_FN EI_IMPULSE_ERROR ei_sleep(int32_t time_ms) {
-    vTaskDelay(time_ms / portTICK_RATE_MS);
+    vTaskDelay(time_ms / portTICK_PERIOD_MS);
     return EI_IMPULSE_OK;
 }
 
@@ -73,11 +78,33 @@ __attribute__((weak)) void ei_printf_float(float f) {
     ei_printf("%f", f);
 }
 
+// we use alligned alloc instead of regular malloc
+// due to https://github.com/espressif/esp-nn/issues/7
 __attribute__((weak)) void *ei_malloc(size_t size) {
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 2, 1)
+    return heap_caps_aligned_alloc(16, size, MALLOC_CAP_DEFAULT);
+#else
+    return aligned_alloc(16, size);
+#endif
+#endif
     return malloc(size);
 }
 
 __attribute__((weak)) void *ei_calloc(size_t nitems, size_t size) {
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 2, 1)
+    return heap_caps_calloc(nitems, size, MALLOC_CAP_DEFAULT);
+#else
+    void *p;
+    p = aligned_alloc(16, nitems * size);
+    if (p == nullptr)
+        return p;
+
+    memset(p, '\0', nitems * size);
+    return p;
+#endif
+#endif
     return calloc(nitems, size);
 }
 

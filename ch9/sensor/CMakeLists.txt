@@ -15,10 +15,13 @@ endif()
 set(EXTRA_COMPONENT_DIRS 
 	${CMAKE_CURRENT_LIST_DIR}/../common/ch9_common
 	${CMAKE_CURRENT_LIST_DIR}/../../components/esp-idf-lib/components 
-	${CMAKE_CURRENT_LIST_DIR}/../../components
+	${CMAKE_CURRENT_LIST_DIR}/../../components/
 	${RMAKER_PATH}/components/esp-insights/components 
 	${RMAKER_PATH}/components
-	${RMAKER_PATH}/examples/common
+	${RMAKER_PATH}/examples/common/app_insights
+	${RMAKER_PATH}/examples/common/app_wifi
+	${RMAKER_PATH}/examples/common/qrcode
+	
 	)
 
 set(PROJECT_VER "1.0")

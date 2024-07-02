@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "OTA_CBOR_Decode_GetStreamResponseMessage",
+  "proof-root": "test/cbmc/proofs"
+}

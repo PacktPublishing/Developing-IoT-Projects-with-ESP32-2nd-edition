@@ -17,6 +17,7 @@ limitations under the License.
 #include "edge-impulse-sdk/tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "edge-impulse-sdk/tensorflow/lite/kernels/kernel_util.h"
 #include "edge-impulse-sdk/tensorflow/lite/micro/kernels/kernel_util.h"
+#include "edge-impulse-sdk/tensorflow/lite/micro/micro_log.h"
 
 namespace tflite {
 namespace {
@@ -25,15 +26,20 @@ constexpr int kInputTensor = 0;
 constexpr int kOutputTensor = 0;
 
 TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+  MicroContext* micro_context = GetMicroContext(context);
+
   TF_LITE_ENSURE_EQ(context, NumInputs(node), 1);
   TF_LITE_ENSURE_EQ(context, NumOutputs(node), 1);
-  const TfLiteTensor* input;
-  TF_LITE_ENSURE_OK(context, GetInputSafe(context, node, kInputTensor, &input));
-  TfLiteTensor* output;
-  TF_LITE_ENSURE_OK(context,
-                    GetOutputSafe(context, node, kOutputTensor, &output));
+  TfLiteTensor* input =
+      micro_context->AllocateTempInputTensor(node, kInputTensor);
+  TF_LITE_ENSURE(context, input != nullptr);
+  TfLiteTensor* output =
+      micro_context->AllocateTempOutputTensor(node, kOutputTensor);
+  TF_LITE_ENSURE(context, output != nullptr);
   output->type = input->type;
 
+  micro_context->DeallocateTempTfLiteTensor(input);
+  micro_context->DeallocateTempTfLiteTensor(output);
   return kTfLiteOk;
 }
 
@@ -65,10 +71,10 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
       resetZeros(tflite::micro::GetTensorData<float>(output), flat_size);
       break;
     default:
-      TF_LITE_KERNEL_LOG(context,
-                         "ZerosLike only currently supports int64, int32, "
-                         "and float32, got %d.",
-                         input->type);
+      MicroPrintf(
+          "ZerosLike only currently supports int64, int32, "
+          "and float32, got %d.",
+          input->type);
       return kTfLiteError;
   }
   return kTfLiteOk;
@@ -76,14 +82,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 }  // namespace
 
 TfLiteRegistration Register_ZEROS_LIKE() {
-  return {/*init=*/nullptr,
-          /*free=*/nullptr,
-          /*prepare=*/Prepare,
-          /*invoke=*/Eval,
-          /*profiling_string=*/nullptr,
-          /*builtin_code=*/0,
-          /*custom_name=*/nullptr,
-          /*version=*/0};
+  return tflite::micro::RegisterOp(nullptr, Prepare, Eval);
 }
 
 }  // namespace tflite

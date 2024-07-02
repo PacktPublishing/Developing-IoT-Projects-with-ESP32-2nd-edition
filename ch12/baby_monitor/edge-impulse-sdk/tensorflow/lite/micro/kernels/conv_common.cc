@@ -155,13 +155,15 @@ TfLiteStatus ConvPrepare(TfLiteContext* context, TfLiteNode* node) {
   const int output_height = output->dims->data[1];
 
   // Dynamically allocate per-channel quantization parameters.
-  const int num_channels = filter->dims->data[kConvQuantizedDimension];
-  data->per_channel_output_multiplier =
-      static_cast<int32_t*>(context->AllocatePersistentBuffer(
-          context, num_channels * sizeof(int32_t)));
-  data->per_channel_output_shift =
-      static_cast<int32_t*>(context->AllocatePersistentBuffer(
-          context, num_channels * sizeof(int32_t)));
+  if (input->type != kTfLiteFloat32) {
+    const int num_channels = filter->dims->data[kConvQuantizedDimension];
+    data->per_channel_output_multiplier =
+        static_cast<int32_t*>(context->AllocatePersistentBuffer(
+            context, num_channels * sizeof(int32_t)));
+    data->per_channel_output_shift =
+        static_cast<int32_t*>(context->AllocatePersistentBuffer(
+            context, num_channels * sizeof(int32_t)));
+  }
 
   // All per-channel quantized tensors need valid zero point and scale arrays.
   if (input->type == kTfLiteInt8 || input->type == kTfLiteInt16) {

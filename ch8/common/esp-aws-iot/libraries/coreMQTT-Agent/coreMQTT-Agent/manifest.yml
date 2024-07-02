@@ -1,0 +1,11 @@
+name : "coreMQTT Agent"
+version: "v1.2.0"
+description: |
+  "Agent for thread-safe use of coreMQTT.\n"
+dependencies:
+  - name : "coreMQTT"
+    version: "v2.1.0"
+    repository:
+      type: "git"
+      url: "https://github.com/FreeRTOS/coreMQTT/"
+license: "MIT"

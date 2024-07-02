@@ -1,5 +1,8 @@
+.. _rda5807m:
+
 rda5807m - Driver for single-chip broadcast FM radio tuner RDA5807M
 ===================================================================
 
 .. doxygengroup:: rda5807m
+   :members:
 

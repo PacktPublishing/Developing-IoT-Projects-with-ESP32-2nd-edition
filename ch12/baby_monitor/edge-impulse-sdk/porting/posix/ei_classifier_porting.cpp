@@ -70,6 +70,16 @@ __attribute__((weak)) void ei_printf_float(float f) {
     ei_printf("%f", f);
 }
 
+__attribute__((weak)) void ei_putchar(char data)
+{
+    putchar(data);
+}
+
+__attribute__((weak)) char ei_getchar(void)
+{
+    return getchar();
+}
+
 __attribute__((weak)) void *ei_malloc(size_t size) {
     return malloc(size);
 }

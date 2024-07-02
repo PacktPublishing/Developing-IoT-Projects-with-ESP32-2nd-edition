@@ -1,0 +1,4 @@
+[submodule "test/unit-test/Unity"]
+	path = test/unit-test/Unity
+	url = https://github.com/ThrowTheSwitch/Unity
+	update = none

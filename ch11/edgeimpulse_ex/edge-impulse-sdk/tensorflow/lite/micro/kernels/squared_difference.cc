@@ -1,8 +1,11 @@
 /* Copyright 2022 The TensorFlow Authors. All Rights Reserved.
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
+
     http://www.apache.org/licenses/LICENSE-2.0
+
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,7 +18,8 @@ limitations under the License.
 #include "edge-impulse-sdk/tensorflow/lite/kernels/internal/reference/integer_ops/add.h"
 #include "edge-impulse-sdk/tensorflow/lite/kernels/kernel_util.h"
 #include "edge-impulse-sdk/tensorflow/lite/micro/kernels/kernel_util.h"
-#include "edge-impulse-sdk/tensorflow/lite/micro/micro_error_reporter.h"
+#include "edge-impulse-sdk/tensorflow/lite/micro/micro_context.h"
+#include "edge-impulse-sdk/tensorflow/lite/micro/micro_log.h"
 
 namespace tflite {
 namespace {
@@ -49,9 +53,17 @@ TfLiteStatus SquaredDifferencePrepare(TfLiteContext* context,
   TF_LITE_ENSURE_EQ(context, NumInputs(node), 2);
   TF_LITE_ENSURE_EQ(context, NumOutputs(node), 1);
 
-  const TfLiteTensor* input1 = GetInput(context, node, kInputTensor1);
-  const TfLiteTensor* input2 = GetInput(context, node, kInputTensor2);
-  TfLiteTensor* output = GetOutput(context, node, kOutputTensor);
+  MicroContext* micro_context = GetMicroContext(context);
+
+  TfLiteTensor* input1 =
+      micro_context->AllocateTempInputTensor(node, kInputTensor1);
+  TF_LITE_ENSURE(context, input1 != nullptr);
+  TfLiteTensor* input2 =
+      micro_context->AllocateTempInputTensor(node, kInputTensor2);
+  TF_LITE_ENSURE(context, input2 != nullptr);
+  TfLiteTensor* output =
+      micro_context->AllocateTempOutputTensor(node, kOutputTensor);
+  TF_LITE_ENSURE(context, output != nullptr);
 
   TF_LITE_ENSURE_TYPES_EQ(context, input1->type, input2->type);
   output->type = input2->type;
@@ -116,6 +128,9 @@ TfLiteStatus SquaredDifferencePrepare(TfLiteContext* context,
 
   data->requires_broadcast = !HaveSameShapes(input1, input2);
 
+  micro_context->DeallocateTempTfLiteTensor(input1);
+  micro_context->DeallocateTempTfLiteTensor(input2);
+  micro_context->DeallocateTempTfLiteTensor(output);
   return kTfLiteOk;
 }
 
@@ -225,14 +240,8 @@ TfLiteStatus SquaredDifferenceEval(TfLiteContext* context, TfLiteNode* node) {
 }  // namespace
 
 TfLiteRegistration Register_SQUARED_DIFFERENCE() {
-  return {/*init=*/SquaredDifferenceInit,
-          /*free=*/nullptr,
-          /*prepare=*/SquaredDifferencePrepare,
-          /*invoke=*/SquaredDifferenceEval,
-          /*profiling_string=*/nullptr,
-          /*builtin_code=*/0,
-          /*custom_name=*/nullptr,
-          /*version=*/0};
+  return tflite::micro::RegisterOp(
+      SquaredDifferenceInit, SquaredDifferencePrepare, SquaredDifferenceEval);
 }
 
 }  // namespace tflite

@@ -1,5 +1,8 @@
+.. _bh1750:
+
 bh1750 - Driver for BH1750 light sensor
 =======================================
 
 .. doxygengroup:: bh1750
+   :members:
 

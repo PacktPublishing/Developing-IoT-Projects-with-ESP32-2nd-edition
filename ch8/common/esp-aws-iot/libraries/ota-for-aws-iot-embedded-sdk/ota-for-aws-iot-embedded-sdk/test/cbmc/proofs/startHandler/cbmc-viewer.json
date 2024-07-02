@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "startHandler",
+  "proof-root": "test/cbmc/proofs"
+}

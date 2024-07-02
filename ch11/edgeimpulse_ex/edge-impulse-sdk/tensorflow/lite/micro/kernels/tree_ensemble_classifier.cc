@@ -69,6 +69,7 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
 
 TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
 
+  MicroContext* micro_context = GetMicroContext(context);
   const OpDataTree* data = static_cast<const OpDataTree*>(node->user_data);
   const flexbuffers::Map& m = flexbuffers::GetRoot(data->buffer_t, data->buffer_length).AsMap();
 
@@ -108,10 +109,10 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
 
   TF_LITE_ENSURE_EQ(context, NumInputs(node), 1);
   TF_LITE_ENSURE_EQ(context, NumOutputs(node), 1);
-  const TfLiteTensor* input = GetInput(context, node, 0);
+  TfLiteTensor* input = micro_context->AllocateTempInputTensor(node, 0);
   TF_LITE_ENSURE(context, input != nullptr);
   TF_LITE_ENSURE(context, NumDimensions(input) == 2);
-  TfLiteTensor* output = GetOutput(context, node, 0);
+  TfLiteTensor* output = micro_context->AllocateTempOutputTensor(node, 0);
   TF_LITE_ENSURE(context, output != nullptr);
 
   int input_width = SizeOfDimension(input, 1);
@@ -121,11 +122,16 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   for (uint32_t i = 0; i < data->num_internal_nodes; i++) {
     TF_LITE_ENSURE(context, data->nodes_featureids[i] < input_width);
     TF_LITE_ENSURE(context, data->nodes_featureids[i] >= 0);
-    if (data->nodes_modes[i] == 0) {
-      TF_LITE_ENSURE(context, data->nodes_classids[i] < output_width);
-      TF_LITE_ENSURE(context, data->nodes_classids[i] >= 0);
+    if (!m["nodes_modes"].AsBlob().IsTheEmptyBlob()) {
+        if (data->nodes_modes[i] == 0) {
+            TF_LITE_ENSURE(context, data->nodes_classids[i] < output_width);
+            TF_LITE_ENSURE(context, data->nodes_classids[i] >= 0);
+        }
     }
   }
+
+  micro_context->DeallocateTempTfLiteTensor(input);
+  micro_context->DeallocateTempTfLiteTensor(output);
 
   return kTfLiteOk;
 }
@@ -133,29 +139,41 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
 TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
   const OpDataTree* data = static_cast<const OpDataTree*>(node->user_data);
+
   const TfLiteEvalTensor* input =
       tflite::micro::GetEvalInput(context, node, 0);
-  const TfLiteEvalTensor* output =
+  const float *in_data = tflite::micro::GetTensorData<float>(input);
+
+  TfLiteEvalTensor* output =
       tflite::micro::GetEvalOutput(context, node, 0);
+  float *out_data = tflite::micro::GetTensorData<float>(output);
 
   const tflite::RuntimeShape output_shape = tflite::micro::GetTensorShape(output);
-  memset(output->data.f, 0, output_shape.FlatSize() * sizeof(float));
+  memset(out_data, 0, output_shape.FlatSize() * sizeof(float));
 
   for (uint32_t i = 0; i < data->num_trees; i++) {
     uint16_t ix = data->tree_root_ids[i];
+
     while (ix < data->num_internal_nodes) {
-      if (input->data.f[data->nodes_featureids[ix]] <= data->nodes_values[ix]) {
+      float node_val = 0;
+      memcpy(&node_val, (data->nodes_values + ix), sizeof(float));
+
+      if (in_data[data->nodes_featureids[ix]] <= node_val) {
         ix = data->nodes_truenodeids[ix];
       } else {
         ix = data->nodes_falsenodeids[ix];
       }
     }
     ix -= data->num_internal_nodes;
-    output->data.f[data->nodes_classids[ix]] += data->nodes_weights[ix];
+
+    float weight = 0;
+    memcpy(&weight, (data->nodes_weights + ix), sizeof(float));
+    out_data[data->nodes_classids[ix]] += weight;
   }
 
   return kTfLiteOk;
 }
+
 
 }  // namespace
 

@@ -1,5 +1,8 @@
+.. _qmc5883l:
+
 qmc5883l - Driver for QMC5883L 3-axis magnetic sensor
 =====================================================
 
 .. doxygengroup:: qmc5883l
+   :members:
 

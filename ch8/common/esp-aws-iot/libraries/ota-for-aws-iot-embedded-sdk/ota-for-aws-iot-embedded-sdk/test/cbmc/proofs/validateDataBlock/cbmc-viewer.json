@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "validateDataBlock",
+  "proof-root": "test/cbmc/proofs"
+}

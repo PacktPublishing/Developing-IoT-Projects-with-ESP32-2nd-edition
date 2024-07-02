@@ -27,6 +27,9 @@ limitations under the License.
 
 namespace tflite {
 
+// Patched by Edge Impulse
+constexpr int RuntimeShape::kMaxSmallSize;
+
 namespace {
 
 constexpr int kMaxInputNum = 10;  // Maximum number of input tensors
@@ -108,6 +111,7 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   TFLITE_DCHECK(context->AllocatePersistentBuffer != nullptr);
   return context->AllocatePersistentBuffer(context, sizeof(OpData));
 }
+
 
 TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   // This function only checks the types. Additional shape validations are

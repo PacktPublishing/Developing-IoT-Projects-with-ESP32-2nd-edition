@@ -1,0 +1,47 @@
+From e76d44bc8b4ee892fc15da7cfe094b345311ef95 Mon Sep 17 00:00:00 2001
+From: Aditya Patwardhan <aditya.patwardhan@espressif.com>
+Date: Tue, 26 Jul 2022 14:31:46 +0530
+Subject: [PATCH] Fix missing prototype warning when
+ `MBEDTLS_DEPRECATED_REMOVED` is enabled
+
+Added the changelog.d entry
+
+Signed-off-by: Aditya Patwardhan <aditya.patwardhan@espressif.com>
+(cherry picked from commit 3096f331ee17a37529f6cc12984d82fc077a4f4d)
+---
+ ChangeLog.d/fix_build_error_for_mbedtls_deprecated_removed.txt | 3 +++
+ library/ssl_tls.c                                              | 2 ++
+ 2 files changed, 5 insertions(+)
+ create mode 100644 ChangeLog.d/fix_build_error_for_mbedtls_deprecated_removed.txt
+
+diff --git a/ChangeLog.d/fix_build_error_for_mbedtls_deprecated_removed.txt b/ChangeLog.d/fix_build_error_for_mbedtls_deprecated_removed.txt
+new file mode 100644
+index 000000000..a70521a00
+--- /dev/null
++++ b/ChangeLog.d/fix_build_error_for_mbedtls_deprecated_removed.txt
+@@ -0,0 +1,3 @@
++Bugfix
++    * Fix build error due to missing prototype
++      warning when MBEDTLS_DEPRECATED_REMOVED is enabled
+diff --git a/library/ssl_tls.c b/library/ssl_tls.c
+index e60b82fa5..f594ab5cd 100644
+--- a/library/ssl_tls.c
++++ b/library/ssl_tls.c
+@@ -2309,6 +2309,7 @@ void mbedtls_ssl_get_dtls_srtp_negotiation_result( const mbedtls_ssl_context *ss
+ }
+ #endif /* MBEDTLS_SSL_DTLS_SRTP */
+
++#if !defined(MBEDTLS_DEPRECATED_REMOVED)
+ void mbedtls_ssl_conf_max_version( mbedtls_ssl_config *conf, int major, int minor )
+ {
+     conf->max_tls_version = (major << 8) | minor;
+@@ -2318,6 +2319,7 @@ void mbedtls_ssl_conf_min_version( mbedtls_ssl_config *conf, int major, int mino
+ {
+     conf->min_tls_version = (major << 8) | minor;
+ }
++#endif /* MBEDTLS_DEPRECATED_REMOVED */
+
+ #if defined(MBEDTLS_SSL_SRV_C)
+ void mbedtls_ssl_conf_cert_req_ca_list( mbedtls_ssl_config *conf,
+--
+2.37.3

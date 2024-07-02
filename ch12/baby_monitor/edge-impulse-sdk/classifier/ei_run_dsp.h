@@ -22,7 +22,12 @@
 #include "edge-impulse-sdk/dsp/spectral/spectral.hpp"
 #include "edge-impulse-sdk/dsp/speechpy/speechpy.hpp"
 #include "edge-impulse-sdk/classifier/ei_signal_with_range.h"
+#include "edge-impulse-sdk/dsp/ei_flatten.h"
 #include "model-parameters/model_metadata.h"
+
+#if EI_CLASSIFIER_HR_ENABLED
+#include "edge-impulse-sdk/dsp/ei_hr.hpp"
+#endif
 
 #if defined(__cplusplus) && EI_C_LINKAGE == 1
 extern "C" {
@@ -46,6 +51,23 @@ float ei_dsp_image_buffer[EI_DSP_IMAGE_BUFFER_STATIC_SIZE];
 static float *ei_dsp_cont_current_frame = nullptr;
 static size_t ei_dsp_cont_current_frame_size = 0;
 static int ei_dsp_cont_current_frame_ix = 0;
+
+__attribute__((unused)) int extract_hr_features(
+    signal_t *signal,
+    matrix_t *output_matrix,
+    void *config_ptr,
+    const float frequency)
+{
+#if EI_CLASSIFIER_HR_ENABLED
+    auto handle = hr_class::create(config_ptr, frequency);
+    auto ret = handle->extract(signal, output_matrix, config_ptr, frequency);
+    delete handle;
+    return ret;
+#else
+    ei_printf("ERR: Please contact EI sales to enable heart rate processing in deployment");
+    return EIDSP_NOT_SUPPORTED;
+#endif
+}
 
 __attribute__((unused)) int extract_spectral_analysis_features(
     signal_t *signal,
@@ -136,104 +158,10 @@ __attribute__((unused)) int extract_raw_features(signal_t *signal, matrix_t *out
 }
 
 __attribute__((unused)) int extract_flatten_features(signal_t *signal, matrix_t *output_matrix, void *config_ptr, const float frequency) {
-    ei_dsp_config_flatten_t config = *((ei_dsp_config_flatten_t*)config_ptr);
-
-    uint32_t expected_matrix_size = 0;
-    if (config.average) expected_matrix_size += config.axes;
-    if (config.minimum) expected_matrix_size += config.axes;
-    if (config.maximum) expected_matrix_size += config.axes;
-    if (config.rms) expected_matrix_size += config.axes;
-    if (config.stdev) expected_matrix_size += config.axes;
-    if (config.skewness) expected_matrix_size += config.axes;
-    if (config.kurtosis) expected_matrix_size += config.axes;
-
-    if (output_matrix->rows * output_matrix->cols != expected_matrix_size) {
-        EIDSP_ERR(EIDSP_MATRIX_SIZE_MISMATCH);
-    }
-
-    int ret;
-
-    // input matrix from the raw signal
-    matrix_t input_matrix(signal->total_length / config.axes, config.axes);
-    if (!input_matrix.buffer) {
-        EIDSP_ERR(EIDSP_OUT_OF_MEM);
-    }
-    signal->get_data(0, signal->total_length, input_matrix.buffer);
-
-    // scale the signal
-    ret = numpy::scale(&input_matrix, config.scale_axes);
-    if (ret != EIDSP_OK) {
-        ei_printf("ERR: Failed to scale signal (%d)\n", ret);
-        EIDSP_ERR(ret);
-    }
-
-    // transpose the matrix so we have one row per axis (nifty!)
-    ret = numpy::transpose(&input_matrix);
-    if (ret != EIDSP_OK) {
-        ei_printf("ERR: Failed to transpose matrix (%d)\n", ret);
-        EIDSP_ERR(ret);
-    }
-
-    size_t out_matrix_ix = 0;
-
-    for (size_t row = 0; row < input_matrix.rows; row++) {
-        matrix_t row_matrix(1, input_matrix.cols, input_matrix.buffer + (row * input_matrix.cols));
-
-        if (config.average) {
-            float fbuffer;
-            matrix_t out_matrix(1, 1, &fbuffer);
-            numpy::mean(&row_matrix, &out_matrix);
-            output_matrix->buffer[out_matrix_ix++] = out_matrix.buffer[0];
-        }
-
-        if (config.minimum) {
-            float fbuffer;
-            matrix_t out_matrix(1, 1, &fbuffer);
-            numpy::min(&row_matrix, &out_matrix);
-            output_matrix->buffer[out_matrix_ix++] = out_matrix.buffer[0];
-        }
-
-        if (config.maximum) {
-            float fbuffer;
-            matrix_t out_matrix(1, 1, &fbuffer);
-            numpy::max(&row_matrix, &out_matrix);
-            output_matrix->buffer[out_matrix_ix++] = out_matrix.buffer[0];
-        }
-
-        if (config.rms) {
-            float fbuffer;
-            matrix_t out_matrix(1, 1, &fbuffer);
-            numpy::rms(&row_matrix, &out_matrix);
-            output_matrix->buffer[out_matrix_ix++] = out_matrix.buffer[0];
-        }
-
-        if (config.stdev) {
-            float fbuffer;
-            matrix_t out_matrix(1, 1, &fbuffer);
-            numpy::stdev(&row_matrix, &out_matrix);
-            output_matrix->buffer[out_matrix_ix++] = out_matrix.buffer[0];
-        }
-
-        if (config.skewness) {
-            float fbuffer;
-            matrix_t out_matrix(1, 1, &fbuffer);
-            numpy::skew(&row_matrix, &out_matrix);
-            output_matrix->buffer[out_matrix_ix++] = out_matrix.buffer[0];
-        }
-
-        if (config.kurtosis) {
-            float fbuffer;
-            matrix_t out_matrix(1, 1, &fbuffer);
-            numpy::kurtosis(&row_matrix, &out_matrix);
-            output_matrix->buffer[out_matrix_ix++] = out_matrix.buffer[0];
-        }
-    }
-
-    // flatten again
-    output_matrix->cols = output_matrix->rows * output_matrix->cols;
-    output_matrix->rows = 1;
-
-    return EIDSP_OK;
+    auto handle = flatten_class::create(config_ptr, frequency);
+    auto ret = handle->extract(signal, output_matrix, config_ptr, frequency);
+    delete handle;
+    return ret;
 }
 
 static class speechpy::processing::preemphasis *preemphasis;
@@ -303,7 +231,7 @@ __attribute__((unused)) int extract_mfcc_features(signal_t *signal, matrix_t *ou
 }
 
 
-static int extract_mfcc_run_slice(signal_t *signal, matrix_t *output_matrix, ei_dsp_config_mfcc_t *config, const float sampling_frequency, matrix_size_t *matrix_size_out, int implementation_version) {
+__attribute__((unused)) static int extract_mfcc_run_slice(signal_t *signal, matrix_t *output_matrix, ei_dsp_config_mfcc_t *config, const float sampling_frequency, matrix_size_t *matrix_size_out, int implementation_version) {
     uint32_t frequency = (uint32_t)sampling_frequency;
 
     int x;
@@ -557,7 +485,7 @@ __attribute__((unused)) int extract_spectrogram_features(signal_t *signal, matri
     }
     else {
         // normalization
-        ret = speechpy::processing::spectrogram_normalization(output_matrix, config.noise_floor_db);
+        ret = speechpy::processing::spectrogram_normalization(output_matrix, config.noise_floor_db, config.implementation_version == 3);
         if (ret != EIDSP_OK) {
             ei_printf("ERR: normalization failed (%d)\n", ret);
             EIDSP_ERR(ret);
@@ -571,7 +499,7 @@ __attribute__((unused)) int extract_spectrogram_features(signal_t *signal, matri
 }
 
 
-static int extract_spectrogram_run_slice(signal_t *signal, matrix_t *output_matrix, ei_dsp_config_spectrogram_t *config, const float sampling_frequency, matrix_size_t *matrix_size_out) {
+__attribute__((unused)) static int extract_spectrogram_run_slice(signal_t *signal, matrix_t *output_matrix, ei_dsp_config_spectrogram_t *config, const float sampling_frequency, matrix_size_t *matrix_size_out) {
     uint32_t frequency = (uint32_t)sampling_frequency;
 
     int x;
@@ -794,6 +722,10 @@ __attribute__((unused)) int extract_mfe_features(signal_t *signal, matrix_t *out
         EIDSP_ERR(EIDSP_PARAMETER_INVALID);
     }
 
+    if ((config.implementation_version == 0) || (config.implementation_version > 4)) {
+        EIDSP_ERR(EIDSP_BLOCK_VERSION_INCORRECT);
+    }
+
     const uint32_t frequency = static_cast<uint32_t>(sampling_frequency);
 
     signal_t preemphasized_audio_signal;
@@ -878,7 +810,7 @@ __attribute__((unused)) int extract_mfe_features(signal_t *signal, matrix_t *out
     return EIDSP_OK;
 }
 
-static int extract_mfe_run_slice(signal_t *signal, matrix_t *output_matrix, ei_dsp_config_mfe_t *config, const float sampling_frequency, matrix_size_t *matrix_size_out) {
+__attribute__((unused)) static int extract_mfe_run_slice(signal_t *signal, matrix_t *output_matrix, ei_dsp_config_mfe_t *config, const float sampling_frequency, matrix_size_t *matrix_size_out) {
     uint32_t frequency = (uint32_t)sampling_frequency;
 
     int x;
@@ -945,6 +877,10 @@ __attribute__((unused)) int extract_mfe_per_slice_features(signal_t *signal, mat
 
     if (config.axes != 1) {
         EIDSP_ERR(EIDSP_MATRIX_SIZE_MISMATCH);
+    }
+
+    if ((config.implementation_version == 0) || (config.implementation_version > 4)) {
+        EIDSP_ERR(EIDSP_BLOCK_VERSION_INCORRECT);
     }
 
     if (signal->total_length == 0) {
@@ -1332,6 +1268,11 @@ __attribute__((unused)) int extract_image_features_quantized(signal_t *signal, m
                         g = (g - torch_mean[1]) / torch_std[1];
                         b = (b - torch_mean[2]) / torch_std[2];
                     }
+                    else if (image_scaling == EI_CLASSIFIER_IMAGE_SCALING_MIN128_127) {
+                        r -= 128.0f;
+                        g -= 128.0f;
+                        b -= 128.0f;
+                    }
 
                     output_matrix->buffer[output_ix++] = static_cast<int8_t>(round(r / scale) + zero_point);
                     output_matrix->buffer[output_ix++] = static_cast<int8_t>(round(g / scale) + zero_point);
@@ -1373,6 +1314,11 @@ __attribute__((unused)) int extract_image_features_quantized(signal_t *signal, m
                         r = (r - torch_mean[0]) / torch_std[0];
                         g = (g - torch_mean[1]) / torch_std[1];
                         b = (b - torch_mean[2]) / torch_std[2];
+                    }
+                    else if (image_scaling == EI_CLASSIFIER_IMAGE_SCALING_MIN128_127) {
+                        r -= 128.0f;
+                        g -= 128.0f;
+                        b -= 128.0f;
                     }
 
                     // ITU-R 601-2 luma transform
@@ -1496,7 +1442,7 @@ __attribute__((unused)) void calc_cepstral_mean_and_var_normalization_spectrogra
     }
     else {
         // normalization
-        int ret = speechpy::processing::spectrogram_normalization(matrix, config->noise_floor_db);
+        int ret = speechpy::processing::spectrogram_normalization(matrix, config->noise_floor_db, config->implementation_version == 3);
         if (ret != EIDSP_OK) {
             ei_printf("ERR: normalization failed (%d)\n", ret);
             return;

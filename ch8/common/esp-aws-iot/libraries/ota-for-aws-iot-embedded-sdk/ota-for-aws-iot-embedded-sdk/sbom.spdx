@@ -1,0 +1,101 @@
+SPDXVersion: SPDX-2.2
+DataLicense: CC0-1.0
+SPDXID: SPDXRef-DOCUMENT
+DocumentName: ota-for-aws-iot-embedded-sdk
+DocumentNamespace: https://github.com/FreeRTOS/ota-for-aws-iot-embedded-sdk/blob/v3.4.0/sbom.spdx
+Creator: Amazon Web Services
+Created: 2022-10-14T17:28:14Z
+CreatorComment: NOASSERTION
+DocumentComment: NOASSERTION
+
+PackageName: ota-for-aws-iot-embedded-sdk
+SPDXID: SPDXRef-Package-ota-for-aws-iot-embedded-sdk
+PackageVersion: v3.4.0
+PackageDownloadLocation: https://github.com/aws/ota-for-aws-iot-embedded-sdk/tree/v3.4.0
+PackageLicenseConcluded: MIT
+FilesAnalyzed: True
+PackageVerificationCode: c5aec1a78595d7b6caf278f129d0f597f44c58e4
+PackageCopyrightText: NOASSERTION
+PackageSummary: NOASSERTION
+PackageDescription: Client library for using the AWS Over-the-air Update service on embedded devices.
+
+FileName: ./ota.c
+SPDXID: SPDXRef-File-ota.c
+FileChecksum: SHA1: 7b806b618f9bdc105bf9df56edf0312a37c382de
+LicenseConcluded: MIT
+FileCopyrightText: NOASSERTION
+FileComment: NOASSERTION
+
+FileName: ./ota_mqtt.c
+SPDXID: SPDXRef-File-ota_mqtt.c
+FileChecksum: SHA1: f65336a06c307dd94e9a7c54e97dbf2827ca9ef4
+LicenseConcluded: MIT
+FileCopyrightText: NOASSERTION
+FileComment: NOASSERTION
+
+FileName: ./ota_interface.c
+SPDXID: SPDXRef-File-ota_interface.c
+FileChecksum: SHA1: 8366ed27445f1b1b91deec38ee9fc75aae8f47ec
+LicenseConcluded: MIT
+FileCopyrightText: NOASSERTION
+FileComment: NOASSERTION
+
+FileName: ./ota_cbor.c
+SPDXID: SPDXRef-File-ota_cbor.c
+FileChecksum: SHA1: 4d3420660d68daf5bc658420bbbcb1496e2662a7
+LicenseConcluded: MIT
+FileCopyrightText: NOASSERTION
+FileComment: NOASSERTION
+
+FileName: ./ota_base64.c
+SPDXID: SPDXRef-File-ota_base64.c
+FileChecksum: SHA1: f6e776072fea73d5bcb547a54fc630a22a10ea11
+LicenseConcluded: MIT
+FileCopyrightText: NOASSERTION
+FileComment: NOASSERTION
+
+FileName: ./ota_http.c
+SPDXID: SPDXRef-File-ota_http.c
+FileChecksum: SHA1: a424265c978500096c97a800a843fef48a57a358
+LicenseConcluded: MIT
+FileCopyrightText: NOASSERTION
+FileComment: NOASSERTION
+
+FileName: ./portable/os/ota_os_freertos.c
+SPDXID: SPDXRef-File-portable-os-ota_os_freertos.c
+FileChecksum: SHA1: a5f9ddb8fa80528ceb406c707c560307fd18a6c1
+LicenseConcluded: MIT
+FileCopyrightText: NOASSERTION
+FileComment: NOASSERTION
+
+FileName: ./portable/os/ota_os_posix.c
+SPDXID: SPDXRef-File-portable-os-ota_os_posix.c
+FileChecksum: SHA1: 86bbca12430b42bd7341c1cb20c77958869dc380
+LicenseConcluded: MIT
+FileCopyrightText: NOASSERTION
+FileComment: NOASSERTION
+
+PackageName: coreJSON
+SPDXID: SPDXRef-Package-coreJSON
+PackageVersion: v3.2.0
+PackageDownloadLocation: https://github.com/FreeRTOS/coreJSON.git
+PackageLicenseConcluded: MIT
+FilesAnalyzed: True
+PackageVerificationCode: da39a3ee5e6b4b0d3255bfef95601890afd80709
+PackageCopyrightText: NOASSERTION
+PackageSummary: NOASSERTION
+PackageDescription: NOASSERTION
+
+PackageName: tinycbor
+SPDXID: SPDXRef-Package-tinycbor
+PackageVersion: v0.5.4
+PackageDownloadLocation: https://github.com/intel/tinycbor.git
+PackageLicenseConcluded: MIT
+FilesAnalyzed: True
+PackageVerificationCode: da39a3ee5e6b4b0d3255bfef95601890afd80709
+PackageCopyrightText: NOASSERTION
+PackageSummary: NOASSERTION
+PackageDescription: NOASSERTION
+
+Relationship: SPDXRef-Package-ota-for-aws-iot-embedded-sdk DEPENDS_ON SPDXRef-Package-coreJSON
+Relationship: SPDXRef-Package-ota-for-aws-iot-embedded-sdk DEPENDS_ON SPDXRef-Package-tinycbor

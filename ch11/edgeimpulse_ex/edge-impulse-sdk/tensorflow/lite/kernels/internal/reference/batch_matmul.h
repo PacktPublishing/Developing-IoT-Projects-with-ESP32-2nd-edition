@@ -20,7 +20,7 @@ limitations under the License.
 
 #include "edge-impulse-sdk/tensorflow/lite/kernels/internal/common.h"
 #include "edge-impulse-sdk/tensorflow/lite/kernels/internal/compatibility.h"
-#include "edge-impulse-sdk/tensorflow/lite/kernels/internal/tensor_utils_common.h"
+#include "edge-impulse-sdk/tensorflow/lite/kernels/internal/portable_tensor_utils.h"
 #include "edge-impulse-sdk/tensorflow/lite/kernels/internal/types.h"
 
 namespace tflite {

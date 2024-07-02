@@ -12,14 +12,21 @@
 #include <stdbool.h>
 #include <string.h>
 #include <inttypes.h>
-#include "esp_heap_caps.h"
+#include "sdkconfig.h"
+#include "esp_log.h"
 
-#ifndef LFS_NO_MALLOC
+
+#if defined(CONFIG_LITTLEFS_MALLOC_STRATEGY_DEFAULT) || \
+    defined(CONFIG_LITTLEFS_MALLOC_STRATEGY_INTERNAL) || \
+    defined(CONFIG_LITTLEFS_MALLOC_STRATEGY_SPIRAM)
 #include <stdlib.h>
+#include "esp_heap_caps.h"
 #endif
-#ifndef LFS_NO_ASSERT
+
+#ifdef CONFIG_LITTLEFS_ASSERTS
 #include <assert.h>
 #endif
+
 #if !defined(LFS_NO_DEBUG) || \
         !defined(LFS_NO_WARN) || \
         !defined(LFS_NO_ERROR) || \
@@ -36,12 +43,13 @@ extern "C"
 // Macros, may be replaced by system specific wrappers. Arguments to these
 // macros must not have side-effects as the macros can be removed for a smaller
 // code footprint
+extern const char ESP_LITTLEFS_TAG[];
 
 // Logging functions
 #ifndef LFS_TRACE
 #ifdef LFS_YES_TRACE
 #define LFS_TRACE_(fmt, ...) \
-    printf("%s:%d:trace: " fmt "%s\n", __FILE__, __LINE__, __VA_ARGS__)
+    ESP_LOGV(ESP_LITTLEFS_TAG, "%s:%d:trace: " fmt "%s\n", __FILE__, __LINE__, __VA_ARGS__)
 #define LFS_TRACE(...) LFS_TRACE_(__VA_ARGS__, "")
 #else
 #define LFS_TRACE(...)
@@ -51,7 +59,7 @@ extern "C"
 #ifndef LFS_DEBUG
 #ifndef LFS_NO_DEBUG
 #define LFS_DEBUG_(fmt, ...) \
-    printf("%s:%d:debug: " fmt "%s\n", __FILE__, __LINE__, __VA_ARGS__)
+    ESP_LOGD(ESP_LITTLEFS_TAG, "%s:%d:debug: " fmt "%s\n", __FILE__, __LINE__, __VA_ARGS__)
 #define LFS_DEBUG(...) LFS_DEBUG_(__VA_ARGS__, "")
 #else
 #define LFS_DEBUG(...)
@@ -61,7 +69,7 @@ extern "C"
 #ifndef LFS_WARN
 #ifndef LFS_NO_WARN
 #define LFS_WARN_(fmt, ...) \
-    printf("%s:%d:warn: " fmt "%s\n", __FILE__, __LINE__, __VA_ARGS__)
+    ESP_LOGW(ESP_LITTLEFS_TAG, "%s:%d:warn: " fmt "%s\n", __FILE__, __LINE__, __VA_ARGS__)
 #define LFS_WARN(...) LFS_WARN_(__VA_ARGS__, "")
 #else
 #define LFS_WARN(...)
@@ -71,7 +79,7 @@ extern "C"
 #ifndef LFS_ERROR
 #ifndef LFS_NO_ERROR
 #define LFS_ERROR_(fmt, ...) \
-    printf("%s:%d:error: " fmt "%s\n", __FILE__, __LINE__, __VA_ARGS__)
+    ESP_LOGE(ESP_LITTLEFS_TAG, "%s:%d:error: " fmt "%s\n", __FILE__, __LINE__, __VA_ARGS__)
 #define LFS_ERROR(...) LFS_ERROR_(__VA_ARGS__, "")
 #else
 #define LFS_ERROR(...)
@@ -79,12 +87,10 @@ extern "C"
 #endif
 
 // Runtime assertions
-#ifndef LFS_ASSERT
-#ifndef LFS_NO_ASSERT
+#ifdef CONFIG_LITTLEFS_ASSERTS
 #define LFS_ASSERT(test) assert(test)
 #else
 #define LFS_ASSERT(test)
-#endif
 #endif
 
 
@@ -205,11 +211,15 @@ static inline uint32_t lfs_tobe32(uint32_t a) {
 uint32_t lfs_crc(uint32_t crc, const void *buffer, size_t size);
 
 // Allocate memory, only used if buffers are not provided to littlefs
-// Note, memory must be 64-bit aligned
+// For the lookahead buffer, memory must be 32-bit aligned
 static inline void *lfs_malloc(size_t size) {
-#ifndef LFS_NO_MALLOC
+#if defined(CONFIG_LITTLEFS_MALLOC_STRATEGY_DEFAULT)
+    return malloc(size); // Equivalent to heap_caps_malloc_default(size);
+#elif defined(CONFIG_LITTLEFS_MALLOC_STRATEGY_INTERNAL)
     return heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
-#else
+#elif defined(CONFIG_LITTLEFS_MALLOC_STRATEGY_SPIRAM)
+    return heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
+#else // CONFIG_LITTLEFS_MALLOC_STRATEGY_DISABLE or not defined
     (void)size;
     return NULL;
 #endif
@@ -217,9 +227,11 @@ static inline void *lfs_malloc(size_t size) {
 
 // Deallocate memory, only used if buffers are not provided to littlefs
 static inline void lfs_free(void *p) {
-#ifndef LFS_NO_MALLOC
+#if defined(CONFIG_LITTLEFS_MALLOC_STRATEGY_DEFAULT) || \
+    defined(CONFIG_LITTLEFS_MALLOC_STRATEGY_INTERNAL) || \
+    defined(CONFIG_LITTLEFS_MALLOC_STRATEGY_SPIRAM)
     free(p);
-#else
+#else // CONFIG_LITTLEFS_MALLOC_STRATEGY_DISABLE or not defined
     (void)p;
 #endif
 }

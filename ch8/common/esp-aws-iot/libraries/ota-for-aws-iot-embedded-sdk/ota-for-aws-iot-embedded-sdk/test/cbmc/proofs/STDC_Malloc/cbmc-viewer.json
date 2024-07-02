@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "STDC_Malloc",
+  "proof-root": "test/cbmc/proofs"
+}

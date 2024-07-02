@@ -1,5 +1,8 @@
+.. _hx711:
+
 hx711 - Driver for HX711 24-bit ADC for weigh scales
 ====================================================
 
 .. doxygengroup:: hx711
+   :members:
 

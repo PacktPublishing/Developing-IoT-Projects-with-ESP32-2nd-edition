@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "getFileContextFromJob",
+  "proof-root": "test/cbmc/proofs"
+}

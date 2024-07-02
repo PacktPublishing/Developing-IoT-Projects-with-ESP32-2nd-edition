@@ -1,5 +1,8 @@
+.. _mcp4725:
+
 mcp4725 - Driver for 12-bit DAC MCP4725
 =======================================
 
 .. doxygengroup:: mcp4725
+   :members:
 

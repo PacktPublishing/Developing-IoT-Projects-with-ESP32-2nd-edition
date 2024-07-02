@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include "edge-impulse-sdk/classifier/ei_classifier_types.h"
+#include "edge-impulse-sdk/dsp/ei_dsp_handle.h"
 #include "edge-impulse-sdk/dsp/numpy.hpp"
 #if EI_CLASSIFIER_USE_FULL_TFLITE || (EI_CLASSIFIER_INFERENCING_ENGINE == EI_CLASSIFIER_AKIDA) || (EI_CLASSIFIER_INFERENCING_ENGINE == EI_CLASSIFIER_MEMRYX)
 #include "tensorflow-lite/tensorflow/lite/c/common.h"
@@ -61,13 +62,34 @@
 #define EI_CLASSIFIER_LAST_LAYER_YOLOX                 4
 #define EI_CLASSIFIER_LAST_LAYER_YOLOV5_V5_DRPAI       5
 #define EI_CLASSIFIER_LAST_LAYER_YOLOV7                6
+#define EI_CLASSIFIER_LAST_LAYER_TAO_RETINANET         7
+#define EI_CLASSIFIER_LAST_LAYER_TAO_SSD               8
+#define EI_CLASSIFIER_LAST_LAYER_TAO_YOLOV3            9
+#define EI_CLASSIFIER_LAST_LAYER_TAO_YOLOV4            10
+#define EI_CLASSIFIER_LAST_LAYER_YOLOV2                11
 
 #define EI_CLASSIFIER_IMAGE_SCALING_NONE          0
 #define EI_CLASSIFIER_IMAGE_SCALING_0_255         1
 #define EI_CLASSIFIER_IMAGE_SCALING_TORCH         2
 #define EI_CLASSIFIER_IMAGE_SCALING_MIN1_1        3
+#define EI_CLASSIFIER_IMAGE_SCALING_MIN128_127    4
+#define EI_CLASSIFIER_IMAGE_SCALING_BGR_SUBTRACT_IMAGENET_MEAN    5
+
+// maps back to ClassificationMode in keras-types.ts
+#define EI_CLASSIFIER_CLASSIFICATION_MODE_CLASSIFICATION      1
+#define EI_CLASSIFIER_CLASSIFICATION_MODE_REGRESSION          2
+#define EI_CLASSIFIER_CLASSIFICATION_MODE_OBJECT_DETECTION    3
+#define EI_CLASSIFIER_CLASSIFICATION_MODE_ANOMALY_GMM         4
+#define EI_CLASSIFIER_CLASSIFICATION_MODE_VISUAL_ANOMALY      5
+#define EI_CLASSIFIER_CLASSIFICATION_MODE_ANOMALY_KMEANS      6
+#define EI_CLASSIFIER_CLASSIFICATION_MODE_DSP                 7
 
 struct ei_impulse;
+
+typedef struct {
+    ei::matrix_t* matrix;
+    uint32_t blockId;
+} ei_feature_t;
 
 typedef struct {
     uint16_t implementation_version;
@@ -78,12 +100,18 @@ typedef struct {
     uint32_t suppression_flags;
 } ei_model_performance_calibration_t;
 
+typedef int (*extract_fn_t)(ei::signal_t *signal, ei::matrix_t *output_matrix, void *config, float frequency);
+
 typedef struct {
+    uint32_t blockId;
     size_t n_output_features;
-    int (*extract_fn)(ei::signal_t *signal, ei::matrix_t *output_matrix, void *config, const float frequency);
+    extract_fn_t extract_fn;
     void *config;
     uint8_t *axes;
     size_t axes_size;
+    int version;  // future proof, can easily add to this struct now
+    DspHandle* (*factory)(void* config, float sampling_freq); // nullptr means no state
+    // v1 ends here
 } ei_model_dsp_t;
 
 typedef struct {
@@ -92,9 +120,14 @@ typedef struct {
 } ei_classifier_anom_cluster_t;
 
 typedef struct {
-    EI_IMPULSE_ERROR (*infer_fn)(const ei_impulse *impulse, ei::matrix_t *fmatrix, ei_impulse_result_t *result, void *config, bool debug);
+    uint32_t blockId;
+    bool keep_output;
+    EI_IMPULSE_ERROR (*infer_fn)(const ei_impulse *impulse, ei_feature_t *fmatrix, uint32_t learn_block_index, uint32_t* input_block_ids, uint32_t input_block_ids_size, ei_impulse_result_t *result, void *config, bool debug);
     void *config;
     int image_scaling;
+    const uint32_t* input_block_ids;
+    const uint32_t input_block_ids_size;
+    uint32_t output_features_count;
 } ei_learning_block_t;
 
 typedef struct {
@@ -127,6 +160,7 @@ typedef struct {
 
 typedef struct {
     uint16_t implementation_version;
+    uint8_t classification_mode;
     uint32_t block_id;
     /* object detection */
     bool object_detection;
@@ -134,6 +168,8 @@ typedef struct {
     uint8_t output_data_tensor;
     uint8_t output_labels_tensor;
     uint8_t output_score_tensor;
+    /* object detection and visual AD */
+    float threshold;
     /* tflite graph params */
     bool quantized;
     bool compiled;
@@ -143,6 +179,7 @@ typedef struct {
 
 typedef struct {
     uint16_t implementation_version;
+    uint8_t classification_mode;
     const uint16_t *anom_axis;
     uint16_t anom_axes_size;
     const ei_classifier_anom_cluster_t *anom_clusters;
@@ -153,10 +190,18 @@ typedef struct {
 
 typedef struct {
     uint16_t implementation_version;
+    uint8_t classification_mode;
     const uint16_t *anom_axis;
     uint16_t anom_axes_size;
+    float anomaly_threshold;
+    bool visual;
     void* graph_config;
 } ei_learning_block_config_anomaly_gmm_t;
+
+typedef struct {
+    float confidence_threshold;
+    float iou_threshold;
+} ei_object_detection_nms_config_t;
 
 typedef struct ei_impulse {
     /* project details */
@@ -179,10 +224,7 @@ typedef struct ei_impulse {
     ei_model_dsp_t *dsp_blocks;
 
     /* object detection */
-    bool object_detection;
     uint16_t object_detection_count;
-    float object_detection_threshold;
-    int8_t object_detection_last_layer;
     uint32_t fomo_output_size;
     uint32_t tflite_output_features_count;
 
@@ -200,11 +242,76 @@ typedef struct ei_impulse {
     uint32_t slices_per_model_window;
 
     /* output details */
-    bool has_anomaly;
+    uint16_t has_anomaly;
     uint16_t label_count;
     const ei_model_performance_calibration_t calibration;
     const char **categories;
+    ei_object_detection_nms_config_t object_detection_nms;
 } ei_impulse_t;
+
+class ei_impulse_state_t {
+typedef DspHandle* _dsp_handle_ptr_t;
+public:
+    const ei_impulse_t *impulse; // keep a pointer to the impulse
+    _dsp_handle_ptr_t *dsp_handles;
+    bool is_temp_handle = false; // to know if we're using the old (stateless) API
+    ei_impulse_state_t(const ei_impulse_t *impulse)
+        : impulse(impulse)
+    {
+        const auto num_dsp_blocks = impulse->dsp_blocks_size;
+        dsp_handles = (_dsp_handle_ptr_t*)ei_malloc(sizeof(_dsp_handle_ptr_t)*num_dsp_blocks);
+        for(size_t ix = 0; ix < num_dsp_blocks; ix++) {
+            dsp_handles[ix] = nullptr;
+        }
+    }
+
+    DspHandle* get_dsp_handle(size_t ix) {
+        if (dsp_handles[ix] == nullptr) {
+            dsp_handles[ix] = impulse->dsp_blocks[ix].factory(impulse->dsp_blocks[ix].config, impulse->frequency);
+        }
+        return dsp_handles[ix];
+    }
+
+    void reset()
+    {
+        for (size_t ix = 0; ix < impulse->dsp_blocks_size; ix++) {
+            if (dsp_handles[ix] != nullptr) {
+                delete dsp_handles[ix];
+                dsp_handles[ix] = nullptr;
+            }
+        }
+    }
+
+    void* operator new(size_t size) {
+        return ei_malloc(size);
+    }
+
+    void operator delete(void* ptr) {
+        ei_free(ptr);
+    }
+
+    void* operator new[](size_t size) {
+        return ei_malloc(size);
+    }
+
+    void operator delete[](void* ptr) {
+        ei_free(ptr);
+    }
+
+    ~ei_impulse_state_t()
+    {
+        reset();
+        ei_free(dsp_handles);
+    }
+};
+
+class ei_impulse_handle_t {
+public:
+    ei_impulse_handle_t(const ei_impulse_t *impulse)
+        : state(impulse), impulse(impulse) {};
+    ei_impulse_state_t state;
+    const ei_impulse_t *impulse;
+};
 
 typedef struct {
     uint32_t block_id;

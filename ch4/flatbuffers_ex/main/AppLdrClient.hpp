@@ -20,7 +20,7 @@ namespace app
             ESP_LOGI(__func__, "location: %s", m_light_sensor.location.c_str());
             for (auto &&rec : m_light_sensor.readings)
             {
-                ESP_LOGI(__func__, "ts: %u, light: %d", rec->timestamp, rec->light);
+                ESP_LOGI(__func__, "ts: %lu, light: %d", rec->timestamp, rec->light);
             }
         }
     };

@@ -1,0 +1,5 @@
+## IDF Component Manager Manifest File. Requires idf-component-manager > v1.2.3
+dependencies:
+  espressif/esp_insights:
+    version: "~1.0.0"
+    override_path: "../../../components/esp_insights"

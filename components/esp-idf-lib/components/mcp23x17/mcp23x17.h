@@ -1,3 +1,30 @@
+/*
+ * Copyright (c) 2018 Ruslan V. Uss <unclerus@gmail.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of itscontributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 /**
  * @file mcp23x17.h
  * @defgroup mcp23x17 mcp23x17
@@ -5,7 +32,7 @@
  *
  * ESP-IDF driver for I2C/SPI 16 bit GPIO expanders MCP23017/MCP23S17
  *
- * Copyright (C) 2018 Ruslan V. Uss <https://github.com/UncleRus>
+ * Copyright (c) 2018 Ruslan V. Uss <unclerus@gmail.com>
  *
  * BSD Licensed as described in the file LICENSE
  */
@@ -38,6 +65,11 @@ typedef struct
     spi_device_interface_config_t spi_cfg;
     spi_device_handle_t spi_dev;
     uint8_t addr;
+    bool use_software_cs; //!< Use software CS control instead of hardware.
+                          //!< Whether to use a software Chip Select (CS) line instead of the hardware
+                          //!< one. This is useful when multiple MCP23S17 chips are sharing the same CS
+                          //!< line on the SPI bus.
+    gpio_port_t cs_pin;   //!< GPIO pin number for CS.
 } mcp23x17_t;
 
 #endif
@@ -75,8 +107,10 @@ typedef enum
 #ifdef CONFIG_MCP23X17_IFACE_I2C
 
 /**
- * @brief Initialize device descriptior
- * SCL frequency is 1MHz
+ * @brief Initialize device descriptor
+ *
+ * Default SCL frequency is 1MHz.
+ *
  * @param dev Pointer to device descriptor
  * @param port I2C port number
  * @param addr I2C address
@@ -84,10 +118,11 @@ typedef enum
  * @param scl_gpio SCL GPIO
  * @return `ESP_OK` on success
  */
-esp_err_t mcp23x17_init_desc(mcp23x17_t *dev, i2c_port_t port, uint8_t addr, gpio_num_t sda_gpio, gpio_num_t scl_gpio);
+esp_err_t mcp23x17_init_desc(mcp23x17_t *dev, uint8_t addr, i2c_port_t port, gpio_num_t sda_gpio, gpio_num_t scl_gpio);
 
 /**
  * @brief Free device descriptor
+ *
  * @param dev Pointer to device descriptor
  * @return `ESP_OK` on success
  */
@@ -96,7 +131,8 @@ esp_err_t mcp23x17_free_desc(mcp23x17_t *dev);
 #else
 
 /**
- * @brief Initialize device descriptior
+ * @brief Initialize device descriptor
+ *
  * @param dev Pointer to device descriptor
  * @param host SPI host
  * @param clock_speed_hz SPI clock speed, Hz (max `MCP23X17_MAX_SPI_FREQ`)
@@ -108,6 +144,7 @@ esp_err_t mcp23x17_init_desc_spi(mcp23x17_t *dev, spi_host_device_t host, uint32
 
 /**
  * @brief Free device descriptor
+ *
  * @param dev Pointer to device descriptor
  * @return `ESP_OK` on success
  */
@@ -134,7 +171,8 @@ esp_err_t mcp23x17_setup_hw_addr(mcp23x17_t *dev, bool enable, uint8_t new_addr)
 #endif
 
 /**
- * Get INTA/INTB pins mode
+ * @brief Get INTA/INTB pins mode
+ *
  * @param dev Pointer to device descriptor
  * @param[out] mode Buffer to store mode
  * @return `ESP_OK` on success
@@ -142,7 +180,8 @@ esp_err_t mcp23x17_setup_hw_addr(mcp23x17_t *dev, bool enable, uint8_t new_addr)
 esp_err_t mcp23x17_get_int_out_mode(mcp23x17_t *dev, mcp23x17_int_out_mode_t *mode);
 
 /**
- * Set INTA/INTB pins mode
+ * @brief Set INTA/INTB pins mode
+ *
  * @param dev Pointer to device descriptor
  * @param mode INTA/INTB pins mode
  * @return `ESP_OK` on success
@@ -195,6 +234,7 @@ esp_err_t mcp23x17_port_set_pullup(mcp23x17_t *dev, uint16_t val);
 
 /**
  * @brief Read GPIO port value
+ *
  * @param dev Pointer to device descriptor
  * @param[out] val 16-bit GPIO port value, 0 bit for PORTA/GPIO0..15 bit for PORTB/GPIO7
  * @return `ESP_OK` on success
@@ -203,6 +243,7 @@ esp_err_t mcp23x17_port_read(mcp23x17_t *dev, uint16_t *val);
 
 /**
  * @brief Write value to GPIO port
+ *
  * @param dev Pointer to device descriptor
  * @param val GPIO port value, 0 bit for PORTA/GPIO0..15 bit for PORTB/GPIO7
  * @return `ESP_OK` on success
@@ -210,7 +251,8 @@ esp_err_t mcp23x17_port_read(mcp23x17_t *dev, uint16_t *val);
 esp_err_t mcp23x17_port_write(mcp23x17_t *dev, uint16_t val);
 
 /**
- * Get GPIO pin mode
+ * @brief Get GPIO pin mode
+ *
  * @param dev Pointer to device descriptor
  * @param pin Pin number, 0 for PORTA/GPIO0..15 for PORTB/GPIO7
  * @param[out] mode GPIO pin mode
@@ -219,7 +261,8 @@ esp_err_t mcp23x17_port_write(mcp23x17_t *dev, uint16_t val);
 esp_err_t mcp23x17_get_mode(mcp23x17_t *dev, uint8_t pin, mcp23x17_gpio_mode_t *mode);
 
 /**
- * Set GPIO pin mode
+ * @brief Set GPIO pin mode
+ *
  * @param dev Pointer to device descriptor
  * @param pin Pin number, 0 for PORTA/GPIO0..15 for PORTB/GPIO7
  * @param mode GPIO pin mode
@@ -229,6 +272,7 @@ esp_err_t mcp23x17_set_mode(mcp23x17_t *dev, uint8_t pin, mcp23x17_gpio_mode_t m
 
 /**
  * @brief Get pullup mode of GPIO pin
+ *
  * @param dev Pointer to device descriptor
  * @param pin Pin number, 0 for PORTA/GPIO0..15 for PORTB/GPIO7
  * @param[out] enable pullup mode
@@ -238,6 +282,7 @@ esp_err_t mcp23x17_get_pullup(mcp23x17_t *dev, uint8_t pin, bool *enable);
 
 /**
  * @brief Set pullup mode of GPIO pin
+ *
  * @param dev Pointer to device descriptor
  * @param pin Pin number, 0 for PORTA/GPIO0..15 for PORTB/GPIO7
  * @param enable `true` to enable pullup
@@ -247,6 +292,7 @@ esp_err_t mcp23x17_set_pullup(mcp23x17_t *dev, uint8_t pin, bool enable);
 
 /**
  * @brief Read GPIO pin level
+ *
  * @param dev Pointer to device descriptor
  * @param pin Pin number, 0 for PORTA/GPIO0..15 for PORTB/GPIO7
  * @param[out] val `true` if pin currently in high state
@@ -267,7 +313,8 @@ esp_err_t mcp23x17_get_level(mcp23x17_t *dev, uint8_t pin, uint32_t *val);
 esp_err_t mcp23x17_set_level(mcp23x17_t *dev, uint8_t pin, uint32_t val);
 
 /**
- * Setup interrupt for group of GPIO pins
+ * @brief Setup interrupt for group of GPIO pins
+ *
  * @param dev Pointer to device descriptor
  * @param mask Pins to setup
  * @param intr Interrupt mode
@@ -276,7 +323,8 @@ esp_err_t mcp23x17_set_level(mcp23x17_t *dev, uint8_t pin, uint32_t val);
 esp_err_t mcp23x17_port_set_interrupt(mcp23x17_t *dev, uint16_t mask, mcp23x17_gpio_intr_t intr);
 
 /**
- * Setup interrupt for GPIO pin
+ * @brief Setup interrupt for GPIO pin
+ *
  * @param dev Pointer to device descriptor
  * @param pin Pin number, 0 for PORTA/GPIO0..15 for PORTB/GPIO7
  * @param intr Interrupt mode

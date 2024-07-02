@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "platformInSelftest",
+  "proof-root": "test/cbmc/proofs"
+}

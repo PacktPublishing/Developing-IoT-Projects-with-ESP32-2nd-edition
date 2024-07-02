@@ -50,7 +50,8 @@
 #include <stddef.h>
 #include <stdio.h>
 #include "esp_err.h"
-#include "driver/i2s.h"
+#include "freertos/FreeRTOS.h"
+#include "driver/i2s_std.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -149,10 +150,13 @@ typedef enum {
 } AUDIO_PLAYER_MUTE_SETTING;
 
 typedef esp_err_t (*audio_player_mute_fn)(AUDIO_PLAYER_MUTE_SETTING setting);
+typedef esp_err_t (*audio_reconfig_std_clock)(uint32_t rate, uint32_t bits_cfg, i2s_slot_mode_t ch);
+typedef esp_err_t (*audio_player_write_fn)(void *audio_buffer, size_t len, size_t *bytes_written, uint32_t timeout_ms);
 
 typedef struct {
-    i2s_port_t port;
     audio_player_mute_fn mute_fn;
+    audio_reconfig_std_clock clk_set_fn;
+    audio_player_write_fn write_fn;
     UBaseType_t priority; /*< FreeRTOS task priority */
 } audio_player_config_t;
 

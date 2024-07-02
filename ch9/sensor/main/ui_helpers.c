@@ -105,7 +105,7 @@ void _ui_opacity_set(lv_obj_t * target, int val)
 
 void _ui_anim_callback_free_user_data(lv_anim_t * a)
 {
-    lv_mem_free(a->user_data);
+    free(a->user_data);
     a->user_data = NULL;
 }
 

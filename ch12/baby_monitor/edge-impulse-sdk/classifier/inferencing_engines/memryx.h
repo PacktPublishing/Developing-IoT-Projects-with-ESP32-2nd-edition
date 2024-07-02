@@ -26,13 +26,6 @@
 #if (EI_CLASSIFIER_INFERENCING_ENGINE == EI_CLASSIFIER_MEMRYX)
 
 /**
- * @brief We can use a lot of space on linux and
- * mx3 is capable of it
- *
- */
-#define EI_CLASSIFIER_MAX_LABELS_COUNT 2000
-
-/**
  * @brief we are forcing SOFTWARE inference (simulation),
  *        beacuse use of hardware is not ready
  *
@@ -199,14 +192,20 @@ bool init_memryx(bool debug, const ei_impulse_t *impulse)
 #if (defined(EI_CLASSIFIER_USE_MEMRYX_HARDWARE) && (EI_CLASSIFIER_USE_MEMRYX_HARDWARE == 1))
 EI_IMPULSE_ERROR run_nn_inference(
     const ei_impulse_t *impulse,
-    ei::matrix_t *fmatrix,
+    ei_feature_t *fmatrix,
+    uint32_t learn_block_index,
+    uint32_t* input_block_ids,
+    uint32_t input_block_ids_size,
     ei_impulse_result_t *result,
     void *config_ptr,
     bool debug = false)
 {
+    ei_learning_block_config_tflite_graph_t *block_config = (ei_learning_block_config_tflite_graph_t*)config_ptr;
+
     memx_status status = MEMX_STATUS_OK;
     int32_t ifmap_height, ifmap_width, ifmap_channel_number, ifmap_format;
     int32_t ofmap_height, ofmap_width, ofmap_channel_number, ofmap_format;
+    int32_t z;
     uint64_t ctx_start_us = 0;
     uint64_t ctx_end_us = 0;
 
@@ -220,13 +219,13 @@ EI_IMPULSE_ERROR run_nn_inference(
 
     /* 4. get input shape - Not needed during runtime, available only for debugging */
     if(verbose_debug) {
-        status = memx_get_ifmap_size(model_id, flow_id, &ifmap_height, &ifmap_width, &ifmap_channel_number, &ifmap_format);
+        status = memx_get_ifmap_size(model_id, flow_id, &ifmap_height, &ifmap_width, &z, &ifmap_channel_number, &ifmap_format);
         ei_printf("status = %d, ifmap shape = (%d, %d, %d), format = %d\n",
                    status, ifmap_height, ifmap_width, ifmap_channel_number, ifmap_format);
     }
 
     // 5. get output shape
-    status = memx_get_ofmap_size(model_id, flow_id, &ofmap_height, &ofmap_width, &ofmap_channel_number, &ofmap_format);
+    status = memx_get_ofmap_size(model_id, flow_id, &ofmap_height, &ofmap_width, &z, &ofmap_channel_number, &ofmap_format);
     if(debug) {
         ei_printf("status = %d, ofmap shape = (%d, %d, %d), format = %d\n",
                   status, ofmap_height, ofmap_width, ofmap_channel_number, ofmap_format);
@@ -237,11 +236,36 @@ EI_IMPULSE_ERROR run_nn_inference(
 
     // 6. Prepare input and output buffers
     float* ofmap = new float [ofmap_width * ofmap_height * ofmap_channel_number];
-    float* ifmap = (float*)fmatrix->buffer;
+
+#if EI_CLASSIFIER_SINGLE_FEATURE_INPUT == 0
+    size_t mtx_size = impulse->dsp_blocks_size + impulse->learning_blocks_size;
+    ei::matrix_t* matrix = NULL;
+
+    ei::matrix_t combined_matrix(1, impulse->nn_input_frame_size);
+    uint32_t buf_pos = 0;
+
+    for (size_t i = 0; i < input_block_ids_size; i++) {
+        size_t cur_mtx = input_block_ids[i];
+
+        if (!find_mtx_by_idx(fmatrix, &matrix, cur_mtx, mtx_size)) {
+            ei_printf("ERR: Cannot find matrix with id %zu\n", cur_mtx);
+            return EI_IMPULSE_INVALID_SIZE;
+        }
+
+        for (size_t ix = 0; ix < matrix->rows * matrix->cols; ix++) {
+            combined_matrix.buffer[buf_pos++] = matrix->buffer[ix];
+        }
+    }
+    matrix = &combined_matrix;
+#else
+    ei::matrix_t* matrix = fmatrix[0].matrix;
+#endif
+
+    float* ifmap = (float*)matrix->buffer;
 
     if(verbose_debug) {
         for(int fidx = 0; fidx < (ofmap_width*ofmap_height); fidx++) {
-            ei_printf("%f\t", fmatrix->buffer[fidx]);
+            ei_printf("%f\t", matrix->buffer[fidx]);
             if(!(fidx % ofmap_width)) ei_printf("\n");
         }
     }
@@ -282,16 +306,17 @@ EI_IMPULSE_ERROR run_nn_inference(
     tflite::reference_ops::Softmax(dummy_params, softmax_shape, ofmap, softmax_shape, ofmap);
 
     // handle inference outputs
-    if (impulse->object_detection) {
-        switch (impulse->object_detection_last_layer) {
+    if (block_config->object_detection) {
+        switch (block_config->object_detection_last_layer) {
             case EI_CLASSIFIER_LAST_LAYER_FOMO: {
                 ei_printf("FOMO executed on Memryx\n");
                 fill_result_struct_f32_fomo(
                     impulse,
+                    block_config,
                     result,
                     ofmap,
-                    impulse->input_width / 8,
-                    impulse->input_height / 8);
+                    impulse->fomo_output_size,
+                    impulse->fomo_output_size);
                 break;
             }
             case EI_CLASSIFIER_LAST_LAYER_SSD: {
@@ -300,7 +325,7 @@ EI_IMPULSE_ERROR run_nn_inference(
             }
             default: {
                 ei_printf("ERR: Unsupported object detection last layer (%d)\n",
-                    impulse->object_detection_last_layer);
+                    block_config->object_detection_last_layer);
                 return EI_IMPULSE_UNSUPPORTED_INFERENCING_ENGINE;
             }
         }
@@ -313,14 +338,19 @@ EI_IMPULSE_ERROR run_nn_inference(
     // Device is closed only at EIM exit, therefore we do not use memx_close()
     return EI_IMPULSE_OK;
 }
+
 #elif (defined(EI_CLASSIFIER_USE_MEMRYX_SOFTWARE) && (EI_CLASSIFIER_USE_MEMRYX_SOFTWARE == 1))
 EI_IMPULSE_ERROR run_nn_inference(
     const ei_impulse_t *impulse,
-    ei::matrix_t *fmatrix,
+    ei_feature_t *fmatrix,
+    uint32_t learn_block_index,
+    uint32_t* inputBlockIds,
     ei_impulse_result_t *result,
     void *config_ptr,
     bool debug = false)
 {
+    ei_learning_block_config_tflite_graph_t *block_config = (ei_learning_block_config_tflite_graph_t*)config_ptr;
+
     // init Python embedded interpreter (should be called once!)
     static py::scoped_interpreter guard{};
 
@@ -332,7 +362,7 @@ EI_IMPULSE_ERROR run_nn_inference(
         memryx_initialized = true;
     }
 
-    std::vector<size_t> input_shape = {1,EI_CLASSIFIER_INPUT_WIDTH,EI_CLASSIFIER_INPUT_HEIGHT,3};
+    std::vector<size_t> input_shape = {1, impulse->input_width, impulse->input_height, 3};
     py::array_t<float> input_data(input_shape); // = zeroes(input_shape, 0);
 
     printf("impulse->w=%d h=%d\n", impulse->input_width, impulse->input_height);
@@ -344,10 +374,24 @@ EI_IMPULSE_ERROR run_nn_inference(
      * For Audio shape is (width, height, 1) - spectrogram
      */
     auto r = input_data.mutable_unchecked<4>();
-    for (py::ssize_t x = 0; x < r.shape(1); x++) {
-        for (py::ssize_t y = 0; y < r.shape(2); y++) {
-            for(py::ssize_t z = 0; z < r.shape(3); z++) {
-                r(0, x, y, z) = (float)(fmatrix->buffer[x * r.shape(2) * r.shape(3) + y * r.shape(3) + z]);
+
+    for (size_t i = 0; i < input_block_ids_size; i++) {
+        uint16_t cur_mtx = input_block_ids[i];
+#if EI_CLASSIFIER_SINGLE_FEATURE_INPUT == 0
+        ei::matrix_t* matrix = NULL;
+
+        if (!find_mtx_by_idx(fmatrix, &matrix, cur_mtx, mtx_size)) {
+            ei_printf("ERR: Cannot find matrix with id %zu\n", cur_mtx);
+            return EI_IMPULSE_INVALID_SIZE;
+        }
+#else
+        ei::matrix_t* matrix = fmatrix[0].matrix;
+#endif
+        for (py::ssize_t x = 0; x < r.shape(1); x++) {
+            for (py::ssize_t y = 0; y < r.shape(2); y++) {
+                for(py::ssize_t z = 0; z < r.shape(3); z++) {
+                r(0, x, y, z) = (float)(fmatrix.buffer[x * r.shape(2) * r.shape(3) + y * r.shape(3) + z]);
+                }
             }
         }
     }
@@ -374,7 +418,7 @@ EI_IMPULSE_ERROR run_nn_inference(
 
     potentials = outputs.squeeze().cast<py::array_t<float>>();
 
-    if (impulse->object_detection == false) {
+    if (block_config->object_detection == false) {
         potentials_v = outputs.squeeze().cast<std::vector<float>>();
     }
     else {
@@ -393,16 +437,17 @@ EI_IMPULSE_ERROR run_nn_inference(
         ei_printf("Memryx raw output:\n%s\n", ret_str.c_str());
     }
 
-    if (impulse->object_detection) {
-        switch (impulse->object_detection_last_layer) {
+    if (block_config->object_detection) {
+        switch (block_config->object_detection_last_layer) {
             case EI_CLASSIFIER_LAST_LAYER_FOMO: {
                 ei_printf("FOMO executed on Memryx\n");
                 fill_result_struct_f32_fomo(
                     impulse,
+                    block_config,
                     result,
                     potentials_v.data(),
-                    impulse->input_width / 8,
-                    impulse->input_height / 8);
+                    impulse->fomo_output_size,
+                    impulse->fomo_output_size);
                 break;
             }
             case EI_CLASSIFIER_LAST_LAYER_SSD: {

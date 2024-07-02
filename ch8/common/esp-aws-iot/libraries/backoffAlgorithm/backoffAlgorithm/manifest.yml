@@ -1,0 +1,5 @@
+name : "backoffAlgorithm"
+version: "v1.3.0"
+description: |
+  "Algorithm for calculating exponential backoff with jitter for network retry attempts.\n"
+license: "MIT"

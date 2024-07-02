@@ -26,7 +26,7 @@ limitations under the License.
 #include "edge-impulse-sdk/tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "edge-impulse-sdk/tensorflow/lite/kernels/kernel_util.h"
 #include "edge-impulse-sdk/tensorflow/lite/micro/kernels/kernel_util.h"
-#include "edge-impulse-sdk/tensorflow/lite/micro/kernels/micro_utils.h"
+#include "edge-impulse-sdk/tensorflow/lite/micro/micro_utils.h"
 #include "edge-impulse-sdk/dsp/kissfft/kiss_fftr.h"
 
 namespace tflite {
@@ -82,8 +82,18 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   TF_LITE_ENSURE_EQ(context, NumOutputs(node), 1);
 
   // Check type and shape of the input tensor
-  const TfLiteTensor* input;
-  TF_LITE_ENSURE_OK(context, GetInputSafe(context, node, kInputTensor, &input));
+  MicroContext* micro_context = GetMicroContext(context);
+
+  TfLiteTensor* input =
+      micro_context->AllocateTempInputTensor(node, kInputTensor);
+
+  TfLiteTensor* fft_length =
+      micro_context->AllocateTempInputTensor(node, kFftLengthTensor);
+  const int32_t* fft_length_data = GetTensorData<int32_t>(fft_length);
+
+  TfLiteTensor* output =
+      micro_context->AllocateTempOutputTensor(node, kOutputTensor);
+
   TF_LITE_ENSURE(context, NumDimensions(input) >= 2);
   if (input->type != kTfLiteFloat32) {
     context->ReportError(context,
@@ -93,11 +103,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   }
 
   // Check type and shape of the fft_length tensor
-  const TfLiteTensor* fft_length;
-  TF_LITE_ENSURE_OK(context,
-                    GetInputSafe(context, node, kFftLengthTensor, &fft_length));
   const RuntimeShape fft_length_shape = GetTensorShape(fft_length);
-
   TF_LITE_ENSURE_EQ(context, NumDimensions(fft_length), 1);
   TF_LITE_ENSURE_EQ(context, fft_length_shape.Dims(0), 2);
   if (fft_length->type != kTfLiteInt32) {
@@ -107,10 +113,6 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
     return kTfLiteError;
   }
 
-  TfLiteTensor* output;
-  TF_LITE_ENSURE_OK(context,
-                    GetOutputSafe(context, node, kOutputTensor, &output));
-
   OpData* data = static_cast<OpData*>(node->user_data);
 
   size_t output_els = output->bytes / sizeof(TfLiteComplex64);
@@ -119,6 +121,9 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
     context->RequestScratchBufferInArena(
               context, output_els * sizeof(kiss_fft_cpx), &data->kiss_fft_output_buffer_index));
 
+  micro_context->DeallocateTempTfLiteTensor(input);
+  micro_context->DeallocateTempTfLiteTensor(fft_length);
+  micro_context->DeallocateTempTfLiteTensor(output);
 
   return kTfLiteOk;
 }

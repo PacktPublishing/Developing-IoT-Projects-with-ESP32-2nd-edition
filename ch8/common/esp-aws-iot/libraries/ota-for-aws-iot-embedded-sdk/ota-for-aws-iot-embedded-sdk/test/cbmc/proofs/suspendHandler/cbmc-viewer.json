@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "suspendHandler",
+  "proof-root": "test/cbmc/proofs"
+}

@@ -222,6 +222,9 @@ class wavelet {
             a[i] = dot(xx + 2 * i, h, nh);
             d[i] = dot(xx + 2 * i, g, nh);
         }
+
+        numpy::underflow_handling(d.data(), d.size());
+        numpy::underflow_handling(a.data(), a.size());
     }
 
     static void extract_features(fvec& y, fvec &features)

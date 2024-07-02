@@ -1,0 +1,6 @@
+{ "expected-missing-functions":
+  [
+  ],
+  "proof-name": "updateBase64DecodingBuffer",
+  "proof-root": "test/cbmc/proofs"
+}

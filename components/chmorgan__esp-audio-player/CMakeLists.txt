@@ -23,4 +23,5 @@ endif()
 idf_component_register(SRCS "${srcs}"
                        REQUIRES "${requires}"
                        INCLUDE_DIRS "${includes}"
+                       REQUIRES driver
 )

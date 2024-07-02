@@ -1,3 +1,31 @@
+/*
+ * Copyright (c) 2017 Andrej Krutak <dev@andree.sk>
+ * Copyright (c) 2018 Ruslan V. Uss <unclerus@gmail.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of itscontributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 /**
  * @file bh1750.c
  *
@@ -9,12 +37,11 @@
  *
  * Ported from esp-open-rtos
  *
- * Copyright (C) 2017 Andrej Krutak <dev@andree.sk>\n
- * Copyright (C) 2018 Ruslan V. Uss <unclerus@gmail.com>
+ * Copyright (c) 2017 Andrej Krutak <dev@andree.sk>\n
+ * Copyright (c) 2018 Ruslan V. Uss <unclerus@gmail.com>
  *
  * BSD Licensed as described in the file LICENSE
  */
-
 #include <stdio.h>
 #include <freertos/FreeRTOS.h>
 #include <esp_log.h>
@@ -36,15 +63,20 @@
 
 #define I2C_FREQ_HZ 400000
 
-static const char *TAG = "BH1750";
+static const char *TAG = "bh1750";
 
 #define CHECK(x) do { esp_err_t __; if ((__ = x) != ESP_OK) return __; } while (0)
 #define CHECK_ARG(VAL) do { if (!(VAL)) return ESP_ERR_INVALID_ARG; } while (0)
 
+inline static esp_err_t send_command_nolock(i2c_dev_t *dev, uint8_t cmd)
+{
+    return i2c_dev_write(dev, NULL, 0, &cmd, 1);
+}
+
 static esp_err_t send_command(i2c_dev_t *dev, uint8_t cmd)
 {
     I2C_DEV_TAKE_MUTEX(dev);
-    I2C_DEV_CHECK(dev, i2c_dev_write(dev, NULL, 0, &cmd, 1));
+    I2C_DEV_CHECK(dev, send_command_nolock(dev, cmd));
     I2C_DEV_GIVE_MUTEX(dev);
 
     return ESP_OK;
@@ -95,7 +127,7 @@ esp_err_t bh1750_setup(i2c_dev_t *dev, bh1750_mode_t mode, bh1750_resolution_t r
 {
     CHECK_ARG(dev);
 
-    uint8_t opcode = mode == BH1750_MODE_CONTINIOUS ? OPCODE_CONT : OPCODE_OT;
+    uint8_t opcode = mode == BH1750_MODE_CONTINUOUS ? OPCODE_CONT : OPCODE_OT;
     switch (resolution)
     {
         case BH1750_RES_LOW:  opcode |= OPCODE_LOW;   break;
@@ -114,8 +146,10 @@ esp_err_t bh1750_set_measurement_time(i2c_dev_t *dev, uint8_t time)
 {
     CHECK_ARG(dev);
 
-    CHECK(send_command(dev, OPCODE_MT_HI | (time >> 5)));
-    CHECK(send_command(dev, OPCODE_MT_LO | (time & 0x1f)));
+    I2C_DEV_TAKE_MUTEX(dev);
+    I2C_DEV_CHECK(dev, send_command_nolock(dev, OPCODE_MT_HI | (time >> 5)));
+    I2C_DEV_CHECK(dev, send_command_nolock(dev, OPCODE_MT_LO | (time & 0x1f)));
+    I2C_DEV_GIVE_MUTEX(dev);
 
     return ESP_OK;
 }

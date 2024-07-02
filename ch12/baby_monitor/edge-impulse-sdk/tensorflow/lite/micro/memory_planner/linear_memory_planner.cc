@@ -19,6 +19,9 @@ limitations under the License.
 
 namespace tflite {
 
+// Patched by Edge Impulse
+constexpr int LinearMemoryPlanner::kMaxBufferCount;
+
 LinearMemoryPlanner::LinearMemoryPlanner()
     : current_buffer_count_(0), next_free_offset_(0) {}
 LinearMemoryPlanner::~LinearMemoryPlanner() {}

@@ -52,17 +52,17 @@ This doesn’t mean the 1st edition is now obsolete. On the contrary, it is stil
 
 
 1. Chapter 1, [Introduction to IoT Development and the ESP32 Platform]
-2. Chapter 2, [Understanding the Development Tools](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main/ch2)
-3. Chapter 3, [Using ESP32 Peripherals](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main/ch3)
-4. Chapter 4, [Employing Third-party Libraries in ESP32 Projects](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main/ch4)
-5. Chapter 5, [Project – Audio Player](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main/ch5/audio_player)
-6. Chapter 6, [Using Wi-Fi Communication for Connectivity](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main/ch6)
-7. Chapter 7, [ESP32 Security Features for Production-Grade devices](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main/ch7)
-8. Chapter 8, [Connecting to Cloud Platforms and Using Services](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main/ch8)
-9. Chapter 9, [Project - Smart home](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main/ch9)
-10. Chapter 10, [Machine Learning with ESP32](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main/ch10)
-11. Chapter 11, [Developing on Edge Impulse](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main/ch11/edgeimpulse_ex)
-12. Chapter 12, [Project – Baby Monitor](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main/ch12/baby_monitor)
+2. Chapter 2, [Understanding the Development Tools](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main-new/ch2)
+3. Chapter 3, [Using ESP32 Peripherals](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main-new/ch3)
+4. Chapter 4, [Employing Third-party Libraries in ESP32 Projects](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main-new/ch4)
+5. Chapter 5, [Project – Audio Player](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main-new/ch5/audio_player)
+6. Chapter 6, [Using Wi-Fi Communication for Connectivity](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main-new/ch6)
+7. Chapter 7, [ESP32 Security Features for Production-Grade devices](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main-new/ch7)
+8. Chapter 8, [Connecting to Cloud Platforms and Using Services](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main-new/ch8)
+9. Chapter 9, [Project - Smart home](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main-new/ch9)
+10. Chapter 10, [Machine Learning with ESP32](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main-new/ch10)
+11. Chapter 11, [Developing on Edge Impulse](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main-new/ch11/edgeimpulse_ex)
+12. Chapter 12, [Project – Baby Monitor](https://github.com/PacktPublishing/Developing-IoT-Projects-with-ESP32-2nd-edition/tree/main-new/ch12/baby_monitor)
 
 
 ### Chapter 01, Introduction to IoT Development and the ESP32 Platform

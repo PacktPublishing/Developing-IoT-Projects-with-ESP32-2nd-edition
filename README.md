@@ -10,6 +10,8 @@ This is the code repository for [Developing-IoT-Projects-with-ESP32, Second-edit
 >
 >2. The ESP-IDF version is now [v5.2.2](https://github.com/espressif/esp-idf/tree/v5.2.2). The documentation is [here](https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/index.html)
 >3. All other frameworks and libraries are updated to their latest master branches, compatible with ESP-IDF v5.2.2. (such as ESP-Rainmaker, LVGL, Edge-Impulse, AWS-IoT-Core, ESP-Skainet, ESP-ADF, and others)
+>4. Python 3.11.5
+
 
 
 **Unlock the full Potential of ESP32 in IoT development to create production-grade smart devices**

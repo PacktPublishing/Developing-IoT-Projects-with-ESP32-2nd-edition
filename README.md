@@ -5,7 +5,7 @@ This is the code repository for [Developing-IoT-Projects-with-ESP32, Second-edit
 >This branch contains major updates to the examples in the book.   
 >
 >1. The devkits of this branch are:
->    - [ESP-S3-BOX-3 - Successor of ESP-S3-Box-Lite](https://github.com/espressif/esp-box/blob/master/docs/hardware_overview/esp32_s3_box_3/hardware_overview_for_box_3.md)
+>    - [ESP-S3-BOX-3](https://github.com/espressif/esp-box/blob/master/docs/hardware_overview/esp32_s3_box_3/hardware_overview_for_box_3.md) Successor to ESP-S3-Box-Lite
 >    - [ESP32-C3-DevKitM-1](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32c3/esp32-c3-devkitm-1/user_guide.html#getting-started)
 >
 >2. The ESP-IDF version is now [v5.2.2](https://github.com/espressif/esp-idf/tree/v5.2.2). The documentation is [here](https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/index.html)
@@ -240,8 +240,8 @@ With the following software and hardware list you can run all code files present
 |:---:  |:---:  |:---:  |:---:  |
 | Git client (latest) | [https://git-scm.com/downloads] (https://git-scm.com/downloads) | PC/laptop | Any|
 | VS Code (latest version)  | [https://code.visualstudio.com/download](https://code.visualstudio.com/download) | PC/laptop | Any|
-|   ESP-IDF (>=4.4.4 and < 5)  | [https://github.com/espressif/esp-idf](https://github.com/espressif/esp-idf) | PC/laptop | Any|
-| Python3 (>= 3.10.11 and < 3.11) | [https://www.python.org/downloads/](https://www.python.org/downloads/) | PC/laptop | Any|
+|   ESP-IDF (>= 5.2.2)  | [https://github.com/espressif/esp-idf](https://github.com/espressif/esp-idf) | PC/laptop | Any|
+| Python3 (>= 3.11.5) | [https://www.python.org/downloads/](https://www.python.org/downloads/) | PC/laptop | Any|
 | SquareLine Studio (>=1.1.1)  | [https://squareline.io/downloads](https://squareline.io/downloads) | PC/laptop | Any|
 | Curl (>8) | [https://curl.se/download.html](https://curl.se/download.html) | PC/laptop | Any|
 | Mosquitto (>2) | [https://mosquitto.org/download/](https://mosquitto.org/download/) | PC/laptop | Any|
@@ -259,7 +259,7 @@ Installation instructions:
    - Follow the steps as given in the download page for your specific platform (MacOS, Windows, Linux/Unix)
 3. Python3:
    - Download and run the platform-specific installer
-4. ESP-IDF 4.4.4 (You can follow the Getting Started guide or clone the GitHub repository)
+4. ESP-IDF 5.2.2 (You can follow the Getting Started guide or clone the GitHub repository)
    - Create a new directory with name “esp” in your home directory.
    - Clone the repository (git clone --recursive --branch v4.4.4 [https://github.com/espressif/esp-idf](https://github.com/espressif/esp-idf))
    - Run the install script for your platform
